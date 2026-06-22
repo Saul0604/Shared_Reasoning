@@ -1,1 +1,72 @@
+# Entornos virtuales
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Archivos de caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Extensiones C compiladas
+*.so
+
+# Distribución y empaquetado
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Instaladores
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Pruebas y cobertura
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+.ruff_cache/
+
+# Base de datos local (ej. SQLite)
+*.db
+*.sqlite
+*.sqlite3
+
+# Variables de entorno y secretos
 .env
+.env.local
+.env.*.local
+.env.template
+secret.json
+
+# Logs
+logs/
+*.log
+*.sqlite-journal
+
+# Carpetas de editores e IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
