@@ -36,10 +36,25 @@ class OpenAIService:
                         {
                             "type": "text",
                             "text": (
-                                "Analyze this breadboard circuit image. "
-                                "Identify all components (e.g. resistors, LEDs, capacitors, ICs, wires), "
-                                "their values/types, and the specific coordinates of their pins on the breadboard (e.g., A5, E5). "
-                                "Then, generate logical step-by-step assembly instructions to build this circuit."
+                                "Analiza esta imagen del circuito en protoboard. "
+                                "Identifica todos los componentes (ej. resistencias, LEDs, capacitores, circuitos integrados, cables), "
+                                "sus valores/tipos y las coordenadas específicas de sus pines en la protoboard (ej., A5, E5). "
+                                "IMPORTANTE: Todo el texto generado (títulos, descripciones de los pasos de ensamblaje) debe estar en ESPAÑOL.\n\n"
+                                "REGLAS CRÍTICAS PARA DISEÑO Y TOPOLOGÍA:\n"
+                                "1. Estándares de nombres de pines:\n"
+                                "   - LEDs: Deben tener exactamente dos pines llamados 'anode' y 'cathode'.\n"
+                                "   - Fuentes de alimentación/Baterías: Deben tener al menos dos pines, típicamente llamados 'positive' y 'negative'.\n"
+                                "   - Capacitores polarizados: Deben tener pines llamados 'anode' y 'cathode'.\n"
+                                "   - Resistencias/Interruptores: Pueden usar nombres genéricos como 'pin1' y 'pin2'.\n"
+                                "2. Consistencia en las Conexiones:\n"
+                                "   - Cada elemento en 'connections' DEBE conectar pines usando sus nombres EXACTOS definidos en la lista 'pins' de sus respectivos componentes.\n"
+                                "   - Nunca conectes a un ID de componente sin especificar un nombre de pin válido que pertenezca a ese componente.\n"
+                                "3. Conexiones a las líneas de alimentación (Power Rails):\n"
+                                "   - Si un pin va conectado a las líneas positivo o negativo (líneas de alimentación laterales) de la protoboard, define su posición como '+' o '-' respectivamente.\n"
+                                "   - Incluye las conexiones a las líneas de alimentación de forma explícita en la lista de conexiones, usando to_component='power_rail' y to_pin='positive' o 'negative'.\n"
+                                "4. Coherencia Eléctrica:\n"
+                                "   - Asegúrate de que los valores sean funcionales (ej., no coloques una resistencia de 10k en serie con un LED en un circuito de 5V/12V porque limitará demasiado la corriente; una resistencia típica de serie para LED debe estar entre 220Ω y 1kΩ).\n\n"
+                                "Luego, genera las instrucciones lógicas de ensamblaje paso a paso para construir este circuito, escritas completamente en ESPAÑOL."
                             )
                         },
                         {
@@ -68,9 +83,10 @@ class OpenAIService:
                         {
                             "type": "text",
                             "text": (
-                                f"Analyze this breadboard photo. Verify if the user has correctly assembled step {step_number} of their circuit. "
-                                "Check if the target component is placed in the correct pins. "
-                                "If it is correct, set is_correct to True. If not, set it to False and explain the exact error (e.g., placed on row A6 instead of A5)."
+                                f"Analiza esta foto de la protoboard. Verifica si el usuario ha ensamblado correctamente el paso {step_number} de su circuito. "
+                                "Revisa si el componente objetivo está colocado en los pines correctos. "
+                                "Si es correcto, establece is_correct en True. Si no, establécelo en False y explica el error exacto (ej., colocado en la fila A6 en lugar de la A5).\n\n"
+                                "IMPORTANTE: Todos los mensajes y explicaciones generados deben estar escritos en ESPAÑOL."
                             )
                         },
                         {
