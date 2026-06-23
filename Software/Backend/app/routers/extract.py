@@ -22,4 +22,4 @@ service = ExtractService()
 )
 def extract(request: ExtractRequest):
 
-    return service.extract()
+    return service.extract(request.image)

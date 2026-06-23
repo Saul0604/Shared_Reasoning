@@ -1,13 +1,9 @@
 from pydantic import BaseModel
 
-
-class Component(BaseModel):
-    id: str
-    type: str
-    value: str
-
-from typing import List
+from app.schemas.component import Component
+from app.schemas.connection import Connection
 
 
 class Circuit(BaseModel):
-    components: List[Component]
+    components: list[Component] = []
+    connections: list[Connection] = []
