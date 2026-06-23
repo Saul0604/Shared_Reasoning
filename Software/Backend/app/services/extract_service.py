@@ -20,7 +20,7 @@ class ExtractService:
                         type="resistor",
                         value="220Ω",
                         pins=[
-                            Pin(name="pin1", position="A5"),
+                            Pin(name="pin1", position="+"),
                             Pin(name="pin2", position="E5")
                         ]
                     ),
@@ -30,16 +30,28 @@ class ExtractService:
                         value="red",
                         pins=[
                             Pin(name="anode", position="F5"),
-                            Pin(name="cathode", position="F7")
+                            Pin(name="cathode", position="-")
                         ]
                     )
                 ],
                 connections=[
                     Connection(
                         from_component="R1",
+                        from_pin="pin1",
+                        to_component="power_rail",
+                        to_pin="positive"
+                    ),
+                    Connection(
+                        from_component="R1",
                         from_pin="pin2",
                         to_component="LED1",
                         to_pin="anode"
+                    ),
+                    Connection(
+                        from_component="LED1",
+                        from_pin="cathode",
+                        to_component="power_rail",
+                        to_pin="negative"
                     )
                 ]
             )
