@@ -1,30 +1,64 @@
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.openai_service import openai_service
+import json
+
 
 class ChatService:
 
     def chat(self, request: ChatRequest) -> ChatResponse:
-        # System instructions
+        # System instructions con lineamientos pedagógicos claros
         system_content = (
             "Eres un tutor experto y amigable de electrónica para el proyecto "
             "'Shared Reasoning: Human–AI Co-execution of Physical Tasks'. "
-            "Tu misión es ayudar a estudiantes a armar circuitos paso a paso sobre una protoboard. "
-            "Responde de forma clara, directa y estructurada. Si el usuario te pregunta sobre un componente "
-            "o error, explícale la teoría básica si es necesario para que aprenda."
+            "Tu misión es guiar de manera pedagógica a estudiantes a armar circuitos reales sobre una protoboard.\n\n"
+            "REGLAS DE COMPORTAMIENTO:\n"
+            "1. Responde de forma clara, directa y estructurada usando Markdown (listas, negritas y emojis relativos a circuitos electrónicos).\n"
+            "2. Nunca des la respuesta directamente si el usuario comete un error; guíalo con preguntas socráticas o pistas claras sobre qué verificar (ej. polaridad, cables en la misma columna, etc.) para que él mismo descubra la solución.\n"
+            "3. Explica brevemente la teoría electrónica que hay detrás si el usuario parece no entender por qué algo se conecta de cierta forma.\n"
+            "4. Habla siempre en ESPAÑOL latino de forma amigable e inspiradora.\n"
         )
 
         messages = [
             {"role": "system", "content": system_content}
         ]
 
-        # Inyectar el contexto actual del circuito si el frontend lo proporciona
-        if request.circuit_context:
+        # Inyectar el contexto de proyecto/circuito si existe
+        if request.project_context:
+            try:
+                # Convertir a cadena JSON legible
+                context_str = json.dumps(request.project_context, indent=2, ensure_ascii=False)
+            except Exception:
+                context_str = str(request.project_context)
             messages.append({
                 "role": "system",
-                "content": f"El contexto del circuito actual cargado es: {request.circuit_context}"
+                "content": f"INFORMACIÓN DEL CIRCUITO ACTUAL (Esquema objetivo):\n{context_str}"
+            })
+        elif request.circuit_context:
+            messages.append({
+                "role": "system",
+                "content": f"INFORMACIÓN DEL CIRCUITO ACTUAL:\n{request.circuit_context}"
             })
 
-        # Cargar historial
+        # Inyectar paso actual
+        if request.current_step is not None:
+            messages.append({
+                "role": "system",
+                "content": f"El estudiante está intentando realizar el Paso {request.current_step} del ensamblaje actualmente."
+            })
+
+        # Inyectar feedback del último error de verificación
+        if request.last_verification_feedback:
+            messages.append({
+                "role": "system",
+                "content": (
+                    f"ATENCIÓN: El último intento de verificación por cámara del estudiante en el paso {request.current_step or ''} "
+                    f"FALLÓ con el siguiente feedback del sistema de visión:\n"
+                    f"'{request.last_verification_feedback}'\n"
+                    "Usa esta información para orientar al estudiante sobre cómo corregir este error físico específico."
+                )
+            })
+
+        # Cargar historial de conversación
         for h in request.history:
             messages.append({
                 "role": h.role,
@@ -45,3 +79,4 @@ class ChatService:
 
         reply = response.choices[0].message.content
         return ChatResponse(reply=reply)
+

@@ -78,8 +78,23 @@ class ExtractService:
                 project=project
             )
 
-        # De lo contrario, realizamos la extracción real usando GPT-4o Vision
-        project = openai_service.extract_project_from_image(image)
+        # De lo contrario, realizamos la extracción real usando el agente LangGraph
+        from app.agents.circuit_agent import circuit_agent
+        
+        initial_state = {
+            "base64_image": image,
+            "project": None,
+            "error_message": None,
+            "correction_attempts": 0
+        }
+        
+        final_state = circuit_agent.invoke(initial_state)
+        project = final_state.get("project")
+        
+        if not project:
+            # Fallback en caso de que falle por completo
+            raise ValueError(final_state.get("error_message") or "No se pudo extraer el circuito de la imagen.")
+            
         return ExtractResponse(
             project=project
-        )
+        )
