@@ -25,6 +25,7 @@ def extract_node(state: AgentState) -> AgentState:
             **state,
             "error_message": f"Error en la extracción por visión: {str(e)}"
         }
+        
 
 # Nodo 2: Valida que no haya cortocircuitos ni colisiones físicas en la protoboard usando reglas en Python
 def validate_node(state: AgentState) -> AgentState:
