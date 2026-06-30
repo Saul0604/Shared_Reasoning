@@ -1,7 +1,7 @@
 from typing import TypedDict, Optional
 from langgraph.graph import StateGraph, END
 from app.schemas.project import Project
-from app.services.openai_service import openai_service
+from app.services.gemini_service import gemini_service
 import json
 
 # Definimos el Estado del Agente
@@ -14,7 +14,7 @@ class AgentState(TypedDict):
 # Nodo 1: Extrae la información básica utilizando visión artificial
 def extract_node(state: AgentState) -> AgentState:
     try:
-        project_data = openai_service.extract_project_from_image(state["base64_image"])
+        project_data = gemini_service.extract_project_from_image(state["base64_image"])
         return {
             **state,
             "project": project_data,
@@ -89,17 +89,7 @@ Por favor corrige el JSON del circuito para solucionar este error. Conserva los 
 Devuelve el JSON del circuito corregido en ESPAÑOL.
 """
     try:
-        response = openai_service.client.beta.chat.completions.parse(
-            model=openai_service.model_name,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt_correction
-                }
-            ],
-            response_format=Project
-        )
-        corrected_project = response.choices[0].message.parsed
+        corrected_project = gemini_service.structured_completion(prompt_correction, Project)
         return {
             **state,
             "project": corrected_project,
@@ -149,3 +139,4 @@ workflow.add_edge("correction", "validator")
 
 # Compilar grafo
 circuit_agent = workflow.compile()
+
