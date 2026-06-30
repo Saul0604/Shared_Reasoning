@@ -29,4 +29,4 @@ app.include_router(chat.router)
 
 from app.core.config import settings
 
-print(settings.OPENAI_API_KEY)
+print(settings.GEMINI_API_KEY)
