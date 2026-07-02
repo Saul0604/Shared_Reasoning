@@ -1,6 +1,6 @@
 from app.schemas.verify import VerifyRequest, VerifyResponse
 from app.schemas.verification import Verification, ComponentVerification
-from app.services.openai_service import openai_service
+from app.services.gemini_service import gemini_service
 
 class VerifyService:
 
@@ -37,8 +37,9 @@ class VerifyService:
                 verification=verification
             )
 
-        # De lo contrario, realizamos la verificación real usando GPT-4o Vision
-        verification = openai_service.verify_step_from_image(request.image, request.step_number)
+        # De lo contrario, realizamos la verificación real usando Gemini Vision
+        verification = gemini_service.verify_step_from_image(request.image, request.step_number)
         return VerifyResponse(
             verification=verification
         )
+

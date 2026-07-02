@@ -5,7 +5,7 @@ from app.schemas.extract import ExtractResponse
 from app.schemas.circuit import Circuit
 from app.schemas.component import Component, Pin
 from app.schemas.connection import Connection
-from app.services.openai_service import openai_service
+from app.services.gemini_service import gemini_service
 
 
 class ExtractService:

@@ -37,4 +37,5 @@ app.include_router(auth.router)
 
 from app.core.config import settings
 
-print(settings.OPENAI_API_KEY)
+print("OPENAI KEY:", settings.OPENAI_API_KEY)
+print("GEMINI KEY:", settings.GEMINI_API_KEY)

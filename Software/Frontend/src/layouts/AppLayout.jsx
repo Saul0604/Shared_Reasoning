@@ -1,93 +1,94 @@
+import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
+import './AppLayout.css'
 
 const navItems = [
-  { to: '/app/chat', label: 'Chats' },
-  { to: '/app/library', label: 'Librería' },
-  { to: '/app/components', label: 'Componentes' },
-  { to: '/app/projects', label: 'Projectos' },
-  { to: '/app/labs', label: 'Laboratorios' },
-  { to: '/app/classes', label: 'Clases' },
+  { to: '/app/chat', label: 'Chats', icon: '💬' },
+  { to: '/app/library', label: 'Librería', icon: '💡' },
+  { to: '/app/components', label: 'Componentes', icon: '📋' },
+  { to: '/app/projects', label: 'Projectos', icon: '📁' },
+  { to: '/app/labs', label: 'Laboratorios', icon: '🔬' },
+  { to: '/app/classes', label: 'Clases', icon: '🎓' },
 ]
 
 const bottomItems = [
-  { to: '/app/settings', label: 'Configuraciones' },
-  { to: '/app/profile', label: 'Perfil' },
-  { to: '/app/help', label: 'Ayuda' },
+  { to: '/app/settings', label: 'Configuraciones', icon: '⚙️' },
+  { to: '/app/profile', label: 'Perfil', icon: '👤' },
+  { to: '/app/help', label: 'Ayuda', icon: '❓' },
 ]
 
 export default function AppLayout() {
+  const [collapsed, setCollapsed] = useState(false)
+
   return (
-    <div style={{ display: 'flex', height: '100vh', fontFamily: 'Inter, sans-serif' }}>
+    <div className="app-layout">
       {/* Sidebar */}
-      <aside style={{
-        width: '220px',
-        background: '#2563EB',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '24px 16px',
-        gap: '8px',
-      }}>
-        {/* Logo */}
-        <div style={{ color: '#F59E0B', fontWeight: 800, fontSize: '22px', marginBottom: '24px' }}>
-          ⚡ Elektra
+      <aside className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''}`}>
+        {/* Header: Logo + Collapse toggle */}
+        <div className="sidebar__header">
+          <button
+            className="sidebar__logo"
+            onClick={() => collapsed && setCollapsed(false)}
+            title={collapsed ? 'Expandir menú' : ''}
+          >
+            <span className="sidebar__logo-icon">⚡</span>
+            <span className="sidebar__logo-text">Elektra</span>
+          </button>
+
+          <button
+            className="sidebar__collapse-btn"
+            onClick={() => setCollapsed(!collapsed)}
+            title={collapsed ? 'Expandir' : 'Minimizar'}
+          >
+            <span className="sidebar__collapse-arrow">
+              {collapsed ? '▶' : '◀'}
+            </span>
+          </button>
         </div>
 
         {/* New Chat */}
-        <button style={{
-          background: '#F59E0B',
-          border: 'none',
-          borderRadius: '8px',
-          padding: '10px',
-          color: 'white',
-          fontWeight: 600,
-          cursor: 'pointer',
-          marginBottom: '16px',
-        }}>
-          + New Chat
+        <button className="sidebar__new-chat" title={collapsed ? 'New Chat' : ''}>
+          <span className="sidebar__new-chat-icon">＋</span>
+          <span className="sidebar__new-chat-text">New Chat</span>
         </button>
 
         {/* Nav items */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-          {navItems.map(({ to, label }) => (
+        <nav className="sidebar__nav">
+          {navItems.map(({ to, label, icon }) => (
             <NavLink
               key={to}
               to={to}
-              style={({ isActive }) => ({
-                color: isActive ? '#F59E0B' : 'white',
-                textDecoration: 'none',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
-                fontWeight: isActive ? 600 : 400,
-              })}
+              title={collapsed ? label : ''}
+              className={({ isActive }) =>
+                `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`
+              }
             >
-              {label}
+              <span className="sidebar__link-icon">{icon}</span>
+              <span className="sidebar__link-text">{label}</span>
             </NavLink>
           ))}
         </nav>
 
         {/* Bottom items */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {bottomItems.map(({ to, label }) => (
+        <div className="sidebar__bottom">
+          {bottomItems.map(({ to, label, icon }) => (
             <NavLink
               key={to}
               to={to}
-              style={({ isActive }) => ({
-                color: isActive ? '#F59E0B' : 'rgba(255,255,255,0.7)',
-                textDecoration: 'none',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                fontSize: '14px',
-              })}
+              title={collapsed ? label : ''}
+              className={({ isActive }) =>
+                `sidebar__link sidebar__link--bottom ${isActive ? 'sidebar__link--active' : ''}`
+              }
             >
-              {label}
+              <span className="sidebar__link-icon">{icon}</span>
+              <span className="sidebar__link-text">{label}</span>
             </NavLink>
           ))}
         </div>
       </aside>
 
       {/* Main content */}
-      <main style={{ flex: 1, overflow: 'auto', background: '#F5F0EB' }}>
+      <main className="app-main">
         <Outlet />
       </main>
     </div>

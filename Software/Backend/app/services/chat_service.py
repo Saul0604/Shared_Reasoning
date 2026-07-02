@@ -1,5 +1,5 @@
 from app.schemas.chat import ChatRequest, ChatResponse
-from app.services.openai_service import openai_service
+from app.services.gemini_service import gemini_service
 import json
 
 
@@ -18,9 +18,7 @@ class ChatService:
             "4. Habla siempre en ESPAÑOL latino de forma amigable e inspiradora.\n"
         )
 
-        messages = [
-            {"role": "system", "content": system_content}
-        ]
+        messages = []
 
         # Inyectar el contexto de proyecto/circuito si existe
         if request.project_context:
@@ -71,12 +69,7 @@ class ChatService:
             "content": request.message
         })
 
-        # Consumir el cliente de OpenAI del openai_service ya inicializado
-        response = openai_service.client.chat.completions.create(
-            model=openai_service.model_name,
-            messages=messages
-        )
-
-        reply = response.choices[0].message.content
+        # Consumir el servicio de Gemini
+        reply = gemini_service.chat_completion(system_content, messages)
         return ChatResponse(reply=reply)
 
