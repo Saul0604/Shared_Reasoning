@@ -3,11 +3,10 @@ import AppLayout from '../layouts/AppLayout'
 import Landing from '../pages/Landing'
 import Survey from '../pages/Survey'
 import ProfileResult from '../pages/ProfileResult'
-import Chat from '../pages/Chats'
+import Proyectos from '../pages/Proyectos'
 import Library from '../pages/Library'
 import Components from '../pages/Components'
-import Projects from '../pages/Projects'
-import Labs from '../pages/Labs'
+import Retos from '../pages/Retos'
 import Classes from '../pages/Classes'
 import Settings from '../pages/Settings'
 import Profile from '../pages/Profile'
@@ -16,12 +15,12 @@ import Help from '../pages/Help'
 // Guardián para proteger rutas privadas
 function ProtectedRoute() {
   const token = localStorage.getItem('access_token')
-  
+
   if (!token) {
     // Redirigir a Landing si no hay sesión
     return <Navigate to="/" replace />
   }
-  
+
   return <Outlet />
 }
 
@@ -36,13 +35,12 @@ const router = createBrowserRouter([
       {
         element: <AppLayout />, // Renderiza la barra de navegación dentro del protector
         children: [
-          { index: true, element: <Navigate to="chats" replace /> },
-          { path: 'chats', element: <Chat /> },
-          { path: 'new-chat', element: <Chat /> },
+          { index: true, element: <Navigate to="proyectos" replace /> },
+          { path: 'proyectos', element: <Proyectos /> },
+          { path: 'new-chat', element: <Proyectos /> },
           { path: 'library', element: <Library /> },
           { path: 'components', element: <Components /> },
-          { path: 'projects', element: <Projects /> },
-          { path: 'labs', element: <Labs /> },
+          { path: 'retos', element: <Retos /> },
           { path: 'classes', element: <Classes /> },
           { path: 'settings', element: <Settings /> },
           { path: 'profile', element: <Profile /> },

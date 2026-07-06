@@ -295,7 +295,7 @@ export default function Landing() {
       }
 
       setShowLogin(false);
-      navigate('/app/labs'); // Redirigir a Laboratorios
+      navigate('/app'); // Redirigir a la app
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
@@ -308,7 +308,7 @@ export default function Landing() {
       <div style={S.card}>
         {/* Logo Sol Elektra en SVG */}
         <div style={S.logoContainer}>
-          <img src="public/logo.svg" alt="Logo Sol Elektra" />
+          <img src="/logo.svg" alt="Logo Sol Elektra" />
         </div>
 
         <h1 style={S.title}>Aprende electrónica con inteligencia artificial</h1>

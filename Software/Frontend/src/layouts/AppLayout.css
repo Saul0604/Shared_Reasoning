@@ -3,6 +3,9 @@
   display: flex;
   height: 100vh;
   font-family: 'Inter', sans-serif;
+  background: #F5F0EB;
+  padding: 12px;
+  gap: 0;
 }
 
 .app-main {
@@ -18,19 +21,22 @@
   background: #2563EB;
   display: flex;
   flex-direction: column;
-  padding: 24px 16px;
-  gap: 8px;
+  padding: 16px 12px;
+  gap: 4px;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   position: relative;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.25);
+  margin-right: 12px;
 }
 
 .sidebar--collapsed {
   width: 68px;
   min-width: 68px;
-  padding: 24px 12px;
+  padding: 20px 12px;
   align-items: center;
 }
 
@@ -39,7 +45,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
   gap: 8px;
 }
 
@@ -59,9 +65,6 @@
   gap: 10px;
   background: none;
   border: none;
-  color: #F59E0B;
-  font-weight: 800;
-  font-size: 22px;
   padding: 4px;
   border-radius: 8px;
   cursor: default;
@@ -79,26 +82,21 @@
   background: rgba(255, 255, 255, 0.15);
 }
 
-.sidebar__logo-icon {
-  font-size: 26px;
+.sidebar__logo-icon-img {
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   transition: transform 0.3s ease;
 }
 
-.sidebar--collapsed .sidebar__logo-icon {
+.sidebar--collapsed .sidebar__logo-icon-img {
   transform: scale(1.15);
 }
 
-.sidebar__logo-text {
-  opacity: 1;
-  transition: opacity 0.2s ease 0.1s;
-}
-
-.sidebar--collapsed .sidebar__logo-text {
-  opacity: 0;
-  width: 0;
-  overflow: hidden;
-  transition: opacity 0.15s ease;
+.sidebar__logo-full-img {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
 }
 
 /* ===== New Chat Button ===== */
@@ -107,15 +105,15 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #F59E0B;
+  background: #5581e1;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 10px;
   color: white;
-  font-weight: 600;
-  font-size: 15px;
+  font-weight: 500;
+  font-size: 13px;
   cursor: pointer;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   white-space: nowrap;
   overflow: hidden;
   transition: background 0.2s, box-shadow 0.2s;
@@ -123,8 +121,8 @@
 }
 
 .sidebar__new-chat:hover {
-  background: #D97706;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+  background: #1d4ed8;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
 }
 
 .sidebar__new-chat-icon {
@@ -142,6 +140,7 @@
   height: 44px;
   padding: 0;
   border-radius: 12px;
+  gap: 0;
 }
 
 .sidebar--collapsed .sidebar__new-chat-text {
@@ -155,17 +154,17 @@
 .sidebar__nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   flex: 1;
 }
 
 .sidebar__bottom {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   border-top: 1px solid rgba(255, 255, 255, 0.15);
-  padding-top: 12px;
-  margin-top: 8px;
+  padding-top: 10px;
+  margin-top: 6px;
 }
 
 /* ===== Links ===== */
@@ -176,9 +175,9 @@
   color: white;
   text-decoration: none;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 400;
-  font-size: 15px;
+  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   transition: background 0.2s, color 0.2s, transform 0.15s;
@@ -190,18 +189,24 @@
 }
 
 .sidebar__link--active {
-  color: #F59E0B;
-  background: rgba(255, 255, 255, 0.12);
-  font-weight: 600;
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: 500;
+}
+
+.sidebar__link--active:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: none;
 }
 
 .sidebar__link--bottom {
   color: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .sidebar__link--bottom.sidebar__link--active {
-  color: #F59E0B;
+  color: white;
+  background: #2563EB;
 }
 
 .sidebar__link-icon {
@@ -219,6 +224,7 @@
 .sidebar--collapsed .sidebar__link {
   justify-content: center;
   padding: 10px;
+  gap: 0;
 }
 
 .sidebar--collapsed .sidebar__link:hover {
@@ -237,7 +243,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   border: none;
   border-radius: 8px;
   width: 32px;
@@ -249,7 +255,7 @@
 }
 
 .sidebar__collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
   color: white;
   transform: scale(1.1);
 }
