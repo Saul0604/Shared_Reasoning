@@ -144,6 +144,26 @@ const useChatStore = create((set, get) => ({
     }
   },
 
+  // Alternar favorito de un proyecto/sesión
+  toggleFavorite: async (sessionId) => {
+    try {
+      const headers = getAuthHeaders()
+      const res = await fetch(`${API_URL}/chat/sessions/${sessionId}/favorite`, {
+        method: 'PATCH',
+        headers
+      })
+
+      if (res.ok) {
+        const updatedSession = await res.json()
+        set((s) => ({
+          sessions: s.sessions.map(sess => sess.id === sessionId ? updatedSession : sess)
+        }))
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err)
+    }
+  },
+
   // Elimina una sesión
   deleteSession: async (sessionId) => {
     try {

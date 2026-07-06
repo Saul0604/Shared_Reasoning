@@ -36,12 +36,11 @@ const router = createBrowserRouter([
       {
         element: <AppLayout />, // Renderiza la barra de navegación dentro del protector
         children: [
-          { index: true, element: <Navigate to="chats" replace /> },
-          { path: 'chats', element: <Chat /> },
+          { index: true, element: <Navigate to="projects" replace /> },
+          { path: 'projects', element: <Chat /> },
           { path: 'new-chat', element: <Chat /> },
           { path: 'library', element: <Library /> },
           { path: 'components', element: <Components /> },
-          { path: 'projects', element: <Projects /> },
           { path: 'labs', element: <Labs /> },
           { path: 'classes', element: <Classes /> },
           { path: 'settings', element: <Settings /> },

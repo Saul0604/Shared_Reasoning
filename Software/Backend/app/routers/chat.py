@@ -39,8 +39,26 @@ def create_session(
     db_session = ChatSession(
         title=chat_in.title or "Nuevo Circuito",
         user_id=current_user.id,
-        schema_image_base64=chat_in.schema_image_base64
+        schema_image_base64=chat_in.schema_image_base64,
+        is_favorite=chat_in.is_favorite or False
     )
+    session.add(db_session)
+    session.commit()
+    session.refresh(db_session)
+    return db_session
+
+# Toggle el estado favorito de una sesión de chat
+@router.patch("/sessions/{chat_id}/favorite", response_model=ChatSessionRead)
+def toggle_favorite_session(
+    chat_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    db_session = session.get(ChatSession, chat_id)
+    if not db_session or db_session.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Sesión de chat no encontrada")
+    
+    db_session.is_favorite = not db_session.is_favorite
     session.add(db_session)
     session.commit()
     session.refresh(db_session)

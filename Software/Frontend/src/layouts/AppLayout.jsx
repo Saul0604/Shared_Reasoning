@@ -4,10 +4,9 @@ import useChatStore from '../store/useChatStore'
 import './AppLayout.css'
 
 const navItems = [
-  { to: '/app/chats', label: 'Chats', icon: '💬' },
+  { to: '/app/projects', label: 'Proyectos', icon: '📁' },
   { to: '/app/library', label: 'Librería', icon: '💡' },
   { to: '/app/components', label: 'Componentes', icon: '📋' },
-  { to: '/app/projects', label: 'Projectos', icon: '📁' },
   { to: '/app/labs', label: 'Laboratorios', icon: '🔬' },
   { to: '/app/classes', label: 'Clases', icon: '🎓' },
 ]
@@ -21,7 +20,7 @@ const bottomItems = [
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
-  const { clearChat } = useChatStore()
+  const { clearChat, goBackToHistory } = useChatStore()
 
   return (
     <div className="app-layout">
@@ -72,6 +71,11 @@ export default function AppLayout() {
               className={({ isActive }) =>
                 `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`
               }
+              onClick={() => {
+                if (to === '/app/projects') {
+                  goBackToHistory()
+                }
+              }}
             >
               <span className="sidebar__link-icon">{icon}</span>
               <span className="sidebar__link-text">{label}</span>

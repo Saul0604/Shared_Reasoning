@@ -15,9 +15,9 @@ export default function Chats() {
   // Configurar vista adecuada según la ruta activa al montar el componente
   useEffect(() => {
     loadSessions()
-    const isNewChatRoute = window.location.pathname.includes('new-chat')
+    const isProjectsRoute = window.location.pathname.includes('projects')
     useChatStore.setState({ 
-      chatViewMode: isNewChatRoute ? 'new_chat' : 'history' 
+      chatViewMode: isProjectsRoute ? 'history' : 'new_chat' 
     })
   }, [window.location.pathname])
 
