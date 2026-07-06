@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import useChatStore from '../store/useChatStore'
 import {
@@ -12,7 +12,9 @@ import {
   User,
   HelpCircle,
   Plus,
-  Trophy
+  Trophy,
+  LogOut,
+  ChevronUp
 } from 'lucide-react'
 import './AppLayout.css'
 
@@ -24,16 +26,41 @@ const navItems = [
   { to: '/app/classes', label: 'Clases', icon: <GraduationCap size={20} /> },
 ]
 
-const bottomItems = [
-  { to: '/app/settings', label: 'Configuraciones', icon: <Settings size={20} /> },
-  { to: '/app/profile', label: 'Perfil', icon: <User size={20} /> },
-  { to: '/app/help', label: 'Ayuda', icon: <HelpCircle size={20} /> },
-]
-
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const navigate = useNavigate()
-  const { clearChat } = useChatStore()
+  
+  const { 
+    clearChat, 
+    goBackToHistory, 
+    user, 
+    loadCurrentUser 
+  } = useChatStore()
+
+  // Cargar usuario actual al montar
+  useEffect(() => {
+    loadCurrentUser()
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token')
+    navigate('/')
+  }
+
+  // Generar iniciales del avatar si no hay foto
+  const getInitials = (name) => {
+    if (!name) return 'U'
+    const parts = name.trim().split(' ')
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+    }
+    return parts[0][0].toUpperCase()
+  }
+
+  const avatarSrc = user?.profile_picture_base64
+    ? (user.profile_picture_base64.startsWith('data:') ? user.profile_picture_base64 : `data:image/jpeg;base64,${user.profile_picture_base64}`)
+    : null
 
   return (
     <div className="app-layout">
@@ -87,6 +114,11 @@ export default function AppLayout() {
               className={({ isActive }) =>
                 `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`
               }
+              onClick={() => {
+                if (to === '/app/proyectos') {
+                  goBackToHistory()
+                }
+              }}
             >
               <span className="sidebar__link-icon">{icon}</span>
               <span className="sidebar__link-text">{label}</span>
@@ -94,21 +126,53 @@ export default function AppLayout() {
           ))}
         </nav>
 
-        {/* Bottom items */}
+        {/* Bottom User Area */}
         <div className="sidebar__bottom">
-          {bottomItems.map(({ to, label, icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              title={collapsed ? label : ''}
-              className={({ isActive }) =>
-                `sidebar__link sidebar__link--bottom ${isActive ? 'sidebar__link--active' : ''}`
-              }
-            >
-              <span className="sidebar__link-icon">{icon}</span>
-              <span className="sidebar__link-text">{label}</span>
-            </NavLink>
-          ))}
+          {/* Menú Emergente de Usuario (Popover) */}
+          {showUserMenu && (
+            <div className="sidebar__user-popover">
+              <button onClick={() => { navigate('/app/settings'); setShowUserMenu(false) }}>
+                <Settings size={16} />
+                <span>Configuraciones</span>
+              </button>
+              <button onClick={() => { navigate('/app/profile'); setShowUserMenu(false) }}>
+                <User size={16} />
+                <span>Mi Perfil</span>
+              </button>
+              <button onClick={() => { navigate('/app/help'); setShowUserMenu(false) }}>
+                <HelpCircle size={16} />
+                <span>Ayuda</span>
+              </button>
+              <div className="popover-divider"></div>
+              <button className="popover-logout" onClick={handleLogout}>
+                <LogOut size={16} />
+                <span>Cerrar sesión</span>
+              </button>
+            </div>
+          )}
+
+          {/* Bloque de Usuario principal */}
+          <div 
+            className={`sidebar__user-card ${showUserMenu ? 'active' : ''}`}
+            onClick={() => setShowUserMenu(!showUserMenu)}
+          >
+            {avatarSrc ? (
+              <img src={avatarSrc} alt="Avatar" className="sidebar__user-avatar" />
+            ) : (
+              <div className="sidebar__user-avatar-initials">
+                {getInitials(user?.full_name || user?.email)}
+              </div>
+            )}
+            {!collapsed && (
+              <>
+                <div className="sidebar__user-info">
+                  <span className="sidebar__user-name">{user?.full_name || 'Estudiante'}</span>
+                  <span className="sidebar__user-email">{user?.email || 'email@elektra.com'}</span>
+                </div>
+                <ChevronUp size={16} className={`sidebar__user-chevron ${showUserMenu ? 'open' : ''}`} />
+              </>
+            )}
+          </div>
         </div>
       </aside>
 

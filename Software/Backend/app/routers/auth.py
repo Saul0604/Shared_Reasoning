@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlmodel import Session, select
+from sqlmodel import Session, select, SQLModel
 from jose import jwt, JWTError
 
 from app.core.database import get_session
@@ -82,6 +83,27 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
     access_token = create_access_token(subject=user.email)
     return Token(access_token=access_token, token_type="bearer")
 
+# Esquema para actualización de perfil
+class UserProfileUpdate(SQLModel):
+    full_name: Optional[str] = None
+    profile_picture_base64: Optional[str] = None
+
 @router.get("/me", response_model=UserRead)
 def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@router.patch("/profile", response_model=UserRead)
+def update_profile(
+    profile_in: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    if profile_in.full_name is not None:
+        current_user.full_name = profile_in.full_name
+    if profile_in.profile_picture_base64 is not None:
+        current_user.profile_picture_base64 = profile_in.profile_picture_base64
+        
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
     return current_user
