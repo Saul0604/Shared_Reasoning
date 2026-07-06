@@ -308,22 +308,7 @@ export default function Landing() {
       <div style={S.card}>
         {/* Logo Sol Elektra en SVG */}
         <div style={S.logoContainer}>
-          <svg viewBox="0 0 100 100" style={S.logoSvg}>
-            {/* Círculo central */}
-            <circle cx="50" cy="50" r="16" fill="#F59E0B" />
-            <circle cx="50" cy="50" r="12" fill="white" />
-            <circle cx="50" cy="50" r="8" fill="#F59E0B" />
-            {/* Rayos del sol */}
-            <polygon points="50,14 46,28 54,28" fill="#F59E0B" />
-            <polygon points="50,86 46,72 54,72" fill="#F59E0B" />
-            <polygon points="14,50 28,46 28,54" fill="#F59E0B" />
-            <polygon points="86,50 72,46 72,54" fill="#F59E0B" />
-            {/* Rayos diagonales */}
-            <polygon points="24,24 35,32 32,35" fill="#F59E0B" />
-            <polygon points="76,76 65,68 68,65" fill="#F59E0B" />
-            <polygon points="76,24 65,32 68,35" fill="#F59E0B" />
-            <polygon points="24,76 35,68 32,65" fill="#F59E0B" />
-          </svg>
+          <img src="public/logo.svg" alt="Logo Sol Elektra" />
         </div>
 
         <h1 style={S.title}>Aprende electrónica con inteligencia artificial</h1>
@@ -354,9 +339,9 @@ export default function Landing() {
             <div style={S.decorBlob2} />
 
             {/* Botón X para cerrar modal */}
-            <button 
-              type="button" 
-              style={S.closeBtn} 
+            <button
+              type="button"
+              style={S.closeBtn}
               onClick={() => {
                 setShowLogin(false);
                 setErrorMsg('');

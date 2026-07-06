@@ -6,6 +6,7 @@ from app.core.config import settings
 
 from app.schemas.project import Project
 from app.schemas.verification import Verification
+from app.schemas.logical_netlist import LogicalNetlist
 
 class OpenAIService:
 
@@ -83,6 +84,70 @@ class OpenAIService:
         )
         return response.choices[0].message.parsed
 
+    def extract_logical_netlist_from_image(self, base64_image: str) -> LogicalNetlist:
+        if "," in base64_image:
+            base64_image = base64_image.split(",")[1]
+
+        prompt_text = (
+            "Analiza esta imagen del circuito en protoboard o diagrama esquemático.\n\n"
+            "Tu tarea consiste en extraer la representación lógica (Netlist) del circuito:\n\n"
+            "=== PASO 1: IDENTIFICAR COMPONENTES ===\n"
+            "Identifica todos los componentes: resistencias, LEDs, capacitores, transistores, baterías, etc. "
+            "Para cada uno especifica id único (ej. R1, LED1, B1), tipo y valor.\n\n"
+            "Pines estándar por tipo:\n"
+            "- LEDs/Diodos: ['anode', 'cathode']\n"
+            "- Resistencias/Interruptores: ['pin1', 'pin2']\n"
+            "- Transistores: ['emitter', 'base', 'collector']\n"
+            "- Baterías/Fuentes: ['positive', 'negative']\n\n"
+            "=== PASO 2: TRAZAR CADA CABLE/LÍNEA ===\n"
+            "Sigue CADA línea/cable del esquemático desde un terminal de componente hasta otro. "
+            "No asumas topologías comunes (serie, paralelo). Traza físicamente cada conexión.\n\n"
+            "=== PASO 3: IDENTIFICAR NODOS (NETS) ===\n"
+            "Un NODO (net) es un punto conductor donde 2 o más pines de componentes se encuentran.\n\n"
+            "REGLAS CRÍTICAS para asignar nets:\n"
+            "1. TRAZA CADA LÍNEA: Sigue cada cable/línea del diagrama desde su origen hasta su destino. "
+            "Dos pines están en la misma net SOLO si hay un camino conductor directo entre ellos SIN pasar por otro componente.\n"
+            "2. JUNCTIONS (NODOS DE 3+ CONEXIONES): Si ves un punto donde 3 o más líneas se cruzan/unen "
+            "(representado a menudo por un punto negro ● o una intersección en T), TODOS esos pines comparten la misma net. "
+            "Este tipo de nodo es MUY IMPORTANTE y no debe dividirse en nets separadas.\n"
+            "3. NO AGRUPES PINES INCORRECTAMENTE: El hecho de que dos componentes tengan funciones similares "
+            "(ej. dos resistencias) NO significa que sus pines estén en la misma net. "
+            "Solo comparten net si hay una línea conductora directa entre ellos.\n"
+            "4. CADA COMPONENTE SEPARA NETS: La corriente que entra por un pin de un componente sale por otro pin. "
+            "Los pines de un mismo componente NUNCA están en la misma net (eso sería un cortocircuito).\n\n"
+            "=== EJEMPLO ===\n"
+            "Para un circuito: V+ -> R1 -> LED1 -> [nodo] -> R2 -> GND, y también [nodo] -> LED2 -> GND:\n"
+            "- Net_VCC: B1.positive, R1.pin1\n"
+            "- Net_A: R1.pin2, LED1.anode\n"
+            "- Net_X: LED1.cathode, R2.pin1, LED2.anode  (¡junction de 3 pines!)\n"
+            "- Net_GND: B1.negative, R2.pin2, LED2.cathode\n\n"
+            "IMPORTANTE: No te preocupes por posiciones físicas. "
+            "Solo concéntrate en la conectividad eléctrica lógica del circuito."
+        )
+
+        response = self.client.beta.chat.completions.parse(
+            model=self.model_name,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt_text
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            response_format=LogicalNetlist
+        )
+        return response.choices[0].message.parsed
+
     def verify_step_from_image(self, base64_image: str, step_number: int) -> Verification:
         if "," in base64_image:
             base64_image = base64_image.split(",")[1]
@@ -112,6 +177,31 @@ class OpenAIService:
                 }
             ],
             response_format=Verification
+        )
+        return response.choices[0].message.parsed
+
+    def chat_completion(self, system_instruction: str, messages: list[dict]) -> str:
+        formatted_messages = [{"role": "system", "content": system_instruction}]
+        for msg in messages:
+            # Filtramos system e inyectamos
+            formatted_messages.append({
+                "role": msg["role"],
+                "content": msg["content"]
+            })
+            
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=formatted_messages
+        )
+        return response.choices[0].message.content
+
+    def structured_completion(self, prompt: str, response_schema):
+        response = self.client.beta.chat.completions.parse(
+            model=self.model_name,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            response_format=response_schema
         )
         return response.choices[0].message.parsed
 
