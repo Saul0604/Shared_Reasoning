@@ -1,0 +1,1 @@
+En esta carpeta va todo lo del area de diseño
