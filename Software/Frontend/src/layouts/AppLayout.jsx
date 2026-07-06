@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import useChatStore from '../store/useChatStore'
 import './AppLayout.css'
 
 const navItems = [
-  { to: '/app/chat', label: 'Chats', icon: '💬' },
+  { to: '/app/chats', label: 'Chats', icon: '💬' },
   { to: '/app/library', label: 'Librería', icon: '💡' },
   { to: '/app/components', label: 'Componentes', icon: '📋' },
   { to: '/app/projects', label: 'Projectos', icon: '📁' },
@@ -19,6 +20,8 @@ const bottomItems = [
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
+  const navigate = useNavigate()
+  const { clearChat } = useChatStore()
 
   return (
     <div className="app-layout">
@@ -47,7 +50,14 @@ export default function AppLayout() {
         </div>
 
         {/* New Chat */}
-        <button className="sidebar__new-chat" title={collapsed ? 'New Chat' : ''}>
+        <button 
+          className="sidebar__new-chat" 
+          title={collapsed ? 'New Chat' : ''}
+          onClick={() => {
+            clearChat()
+            navigate('/app/new-chat')
+          }}
+        >
           <span className="sidebar__new-chat-icon">＋</span>
           <span className="sidebar__new-chat-text">New Chat</span>
         </button>
