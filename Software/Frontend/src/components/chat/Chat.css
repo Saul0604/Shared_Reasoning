@@ -43,40 +43,38 @@
 .chat-welcome__cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  max-width: 560px;
+  gap: 24px;
+  max-width: 720px;
   width: 100%;
 }
 
 .chat-welcome__card {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 16px;
   padding: 16px;
-  background: white;
-  border: 1px solid #E5E7EB;
+  background: transparent;
+  border: none;
   border-radius: 12px;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  transition: background-color 0.2s, transform 0.15s;
   text-align: left;
 }
 
 .chat-welcome__card:hover {
-  border-color: #2563EB;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.12);
-  transform: translateY(-2px);
+  background-color: #F9FAFB;
+  transform: translateY(-1px);
 }
 
 .chat-welcome__card-icon {
-  font-size: 24px;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #EFF6FF;
-  border-radius: 8px;
+  background: #EEF2FF;
+  border-radius: 10px;
 }
 
 .chat-welcome__card-content {

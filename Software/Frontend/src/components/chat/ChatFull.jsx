@@ -2,25 +2,26 @@ import { useRef, useEffect } from 'react'
 import useChatStore from '../../store/useChatStore'
 import ChatInput from './ChatInput'
 import MarkdownBubble from './MarkdownBubble'
+import { Cpu, Route, Zap, CircuitBoard } from 'lucide-react'
 
 const suggestions = [
   {
     key: 'explain-circuit',
-    icon: '🔍',
+    icon: <Cpu size={20} color="#2563EB" />,
     title: 'Explícame este circuito',
     desc: 'Sube una imagen o esquema.',
     needsImage: true,
   },
   {
     key: 'convert-protoboard',
-    icon: '🔄',
+    icon: <Route size={20} color="#2563EB" />,
     title: 'Convierte un esquema a protoboard',
     desc: 'Traducción visual paso a paso.',
     needsImage: true,
   },
   {
     key: 'resistors',
-    icon: '🎨',
+    icon: <Zap size={20} color="#2563EB" />,
     title: 'Enséñame resistencias',
     desc: 'Código de colores y cálculo.',
     message: 'Enséñame sobre resistencias y el código de colores',
@@ -28,7 +29,7 @@ const suggestions = [
   },
   {
     key: 'arduino',
-    icon: '🤖',
+    icon: <CircuitBoard size={20} color="#2563EB" />,
     title: 'Diseña un circuito para Arduino',
     desc: 'Guía de conexiones y código.',
     message: 'Diseña un circuito para Arduino con LED y explícame cómo armarlo',

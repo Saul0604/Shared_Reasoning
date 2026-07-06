@@ -5,7 +5,7 @@ import ChatSidebar from '../components/chat/ChatSidebar'
 import VisualPanel from '../components/chat/VisualPanel'
 import '../components/chat/Chat.css'
 
-export default function Chats() {
+export default function Proyectos() {
   const { 
     visualMode, 
     loadSessions,
