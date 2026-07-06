@@ -317,7 +317,7 @@ function ComponentShape({ component, isHighlighted, onHover, onLeave }) {
       </Group>
 
       {/* Value label (below) */}
-      {component.value && (
+      {component.value && !['null', 'none', 'unknown'].includes(component.value.toLowerCase()) && (
         <Text
           x={cx - 30} y={cy + bodyH / 2 + 8}
           width={60}

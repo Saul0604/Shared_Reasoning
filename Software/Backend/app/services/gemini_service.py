@@ -5,6 +5,7 @@ from google.genai import types
 from app.core.config import settings
 from app.schemas.project import Project
 from app.schemas.verification import Verification
+from app.schemas.logical_netlist import LogicalNetlist
 
 import base64
 
@@ -12,10 +13,12 @@ import base64
 class GeminiService:
 
     def __init__(self):
-        # Selecciona el cliente y el modelo según la configuración (Nube vs Local)
-        if settings.MODEL_PROVIDER == "local":
-            # Para modelos locales compatibles con OpenAI API (Ollama, LM Studio, etc.)
-            # se usa el cliente de Gemini apuntando a un servidor local
+        # Selecciona el cliente y el modelo según la configuración
+        if settings.MODEL_PROVIDER == "openai":
+            from app.services.openai_service import OpenAIService
+            self.openai_service = OpenAIService()
+            self.provider = "openai"
+        elif settings.MODEL_PROVIDER == "local":
             from openai import OpenAI
             self.local_client = OpenAI(
                 base_url=settings.LOCAL_API_BASE,
@@ -23,12 +26,18 @@ class GeminiService:
             )
             self.model_name = settings.LOCAL_MODEL_NAME
             self.is_local = True
+            self.provider = "local"
         else:
             self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
             self.model_name = "gemini-2.5-flash"
             self.is_local = False
+            self.provider = "gemini"
+
 
     def extract_project_from_image(self, base64_image: str) -> Project:
+        if self.provider == "openai":
+            return self.openai_service.extract_project_from_image(base64_image)
+
         if "," in base64_image:
             base64_image = base64_image.split(",")[1]
 
@@ -90,7 +99,82 @@ class GeminiService:
         parsed_data = json.loads(response.text)
         return Project.model_validate(parsed_data)
 
+    def extract_logical_netlist_from_image(self, base64_image: str) -> LogicalNetlist:
+        """
+        [FASE 1 y 2 CONSOLIDADA]: Extrae la representación lógica del circuito (Netlist)
+        analizando los componentes y las conexiones eléctricas en un formato estructurado sin coordenadas físicas.
+        """
+        if self.provider == "openai":
+            # Proxying temporal hacia openai si está activo
+            return self.openai_service.extract_logical_netlist_from_image(base64_image)
+
+        if "," in base64_image:
+            base64_image = base64_image.split(",")[1]
+
+        image_bytes = base64.b64decode(base64_image)
+
+        prompt_text = (
+            "Analiza esta imagen del circuito en protoboard o diagrama esquemático.\n\n"
+            "Tu tarea consiste en extraer la representación lógica (Netlist) del circuito:\n\n"
+            "=== PASO 1: IDENTIFICAR COMPONENTES ===\n"
+            "Identifica todos los componentes: resistencias, LEDs, capacitores, transistores, baterías, etc. "
+            "Para cada uno especifica id único (ej. R1, LED1, B1), tipo y valor.\n\n"
+            "Pines estándar por tipo:\n"
+            "- LEDs/Diodos: ['anode', 'cathode']\n"
+            "- Resistencias/Interruptores: ['pin1', 'pin2']\n"
+            "- Transistores: ['emitter', 'base', 'collector']\n"
+            "- Baterías/Fuentes: ['positive', 'negative']\n\n"
+            "=== PASO 2: TRAZAR CADA CABLE/LÍNEA ===\n"
+            "Sigue CADA línea/cable del esquemático desde un terminal de componente hasta otro. "
+            "No asumas topologías comunes (serie, paralelo). Traza físicamente cada conexión.\n\n"
+            "=== PASO 3: IDENTIFICAR NODOS (NETS) ===\n"
+            "Un NODO (net) es un punto conductor donde 2 o más pines de componentes se encuentran.\n\n"
+            "REGLAS CRÍTICAS para asignar nets:\n"
+            "1. TRAZA CADA LÍNEA: Sigue cada cable/línea del diagrama desde su origen hasta su destino. "
+            "Dos pines están en la misma net SOLO si hay un camino conductor directo entre ellos SIN pasar por otro componente.\n"
+            "2. JUNCTIONS (NODOS DE 3+ CONEXIONES): Si ves un punto donde 3 o más líneas se cruzan/unen "
+            "(representado a menudo por un punto negro ● o una intersección en T), TODOS esos pines comparten la misma net. "
+            "Este tipo de nodo es MUY IMPORTANTE y no debe dividirse en nets separadas.\n"
+            "3. NO AGRUPES PINES INCORRECTAMENTE: El hecho de que dos componentes tengan funciones similares "
+            "(ej. dos resistencias) NO significa que sus pines estén en la misma net. "
+            "Solo comparten net si hay una línea conductora directa entre ellos.\n"
+            "4. CADA COMPONENTE SEPARA NETS: La corriente que entra por un pin de un componente sale por otro pin. "
+            "Los pines de un mismo componente NUNCA están en la misma net (eso sería un cortocircuito).\n\n"
+            "=== EJEMPLO ===\n"
+            "Para un circuito: V+ -> R1 -> LED1 -> [nodo] -> R2 -> GND, y también [nodo] -> LED2 -> GND:\n"
+            "- Net_VCC: B1.positive, R1.pin1\n"
+            "- Net_A: R1.pin2, LED1.anode\n"
+            "- Net_X: LED1.cathode, R2.pin1, LED2.anode  (¡junction de 3 pines!)\n"
+            "- Net_GND: B1.negative, R2.pin2, LED2.cathode\n\n"
+            "IMPORTANTE: No te preocupes por posiciones físicas. "
+            "Solo concéntrate en la conectividad eléctrica lógica del circuito."
+        )
+
+        response = self.client.models.generate_content(
+            model=self.model_name,
+            contents=[
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part.from_text(text=prompt_text),
+                        types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                    ],
+                ),
+            ],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=LogicalNetlist,
+            ),
+        )
+
+        import json
+        parsed_data = json.loads(response.text)
+        return LogicalNetlist.model_validate(parsed_data)
+
     def verify_step_from_image(self, base64_image: str, step_number: int) -> Verification:
+        if self.provider == "openai":
+            return self.openai_service.verify_step_from_image(base64_image, step_number)
+
         if "," in base64_image:
             base64_image = base64_image.split(",")[1]
 
@@ -125,16 +209,9 @@ class GeminiService:
         return Verification.model_validate(parsed_data)
 
     def chat_completion(self, system_instruction: str, messages: list[dict]) -> str:
-        """
-        Realiza un chat completion usando Gemini.
-        
-        Args:
-            system_instruction: El system prompt / instrucciones del sistema
-            messages: Lista de dicts con 'role' y 'content' (roles: 'user', 'assistant', 'system')
-        
-        Returns:
-            El texto de respuesta del modelo
-        """
+        if self.provider == "openai":
+            return self.openai_service.chat_completion(system_instruction, messages)
+
         # Construir los contenidos para Gemini
         # Los mensajes con role 'system' se agregan al system_instruction
         extra_system_parts = []
@@ -171,10 +248,9 @@ class GeminiService:
         return response.text
 
     def structured_completion(self, prompt: str, response_schema):
-        """
-        Realiza una completion con structured output (sin imagen).
-        Usado por el nodo de corrección del agente LangGraph.
-        """
+        if self.provider == "openai":
+            return self.openai_service.structured_completion(prompt, response_schema)
+
         response = self.client.models.generate_content(
             model=self.model_name,
             contents=[

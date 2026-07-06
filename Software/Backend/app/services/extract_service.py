@@ -78,23 +78,35 @@ class ExtractService:
                 project=project
             )
 
-        # De lo contrario, realizamos la extracción real usando el agente LangGraph
-        from app.agents.circuit_agent import circuit_agent
+        # De lo contrario, realizamos la extracción lógica y calculamos el layout físico de forma determinista
+        from app.services.auto_layout_service import auto_layout_service
+        import json
         
-        initial_state = {
-            "base64_image": image,
-            "project": None,
-            "error_message": None,
-            "correction_attempts": 0
-        }
-        
-        final_state = circuit_agent.invoke(initial_state)
-        project = final_state.get("project")
-        
-        if not project:
-            # Fallback en caso de que falle por completo
-            raise ValueError(final_state.get("error_message") or "No se pudo extraer el circuito de la imagen.")
+        try:
+            # 1. Extraemos la Netlist lógica de la IA
+            logical_netlist = gemini_service.extract_logical_netlist_from_image(image)
             
-        return ExtractResponse(
-            project=project
-        )
+            # DEBUG: Imprimir la netlist lógica que devolvió la IA
+            print("\n" + "="*60)
+            print("NETLIST LOGICA RECIBIDA DE LA IA:")
+            print("="*60)
+            print(json.dumps(logical_netlist.model_dump(), indent=2, default=str))
+            print("="*60 + "\n")
+            
+            # 2. Generamos el layout físico en la protoboard de manera determinista mediante algoritmos matemáticos
+            project = auto_layout_service.generate_layout(logical_netlist)
+
+            # DEBUG: Imprimir el project resultante
+            print("\n" + "="*60)
+            print("PROJECT GENERADO (layout físico):")
+            print("="*60)
+            print(json.dumps(project.model_dump(), indent=2, default=str))
+            print("="*60 + "\n")
+            
+            return ExtractResponse(
+                project=project
+            )
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            raise ValueError(f"Falla durante la extracción y colocación del circuito: {str(e)}")

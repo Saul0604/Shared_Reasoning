@@ -71,12 +71,9 @@ class Circuit(BaseModel):
                         f"en componente '{connection.to_component}'"
                     )
 
-        # Verificar componentes huérfanos
-        for component in self.components:
-
-            if component.id not in used_components:
-                raise ValueError(
-                    f"Componente sin conexiones: {component.id}"
-                )
+        # NOTA: La validación de "componentes huérfanos" fue removida porque en la
+        # arquitectura de layout horizontal, muchas conexiones son implícitas
+        # (pines que comparten columna se conectan vía bus strip interno de la protoboard)
+        # y no generan entradas explícitas en la lista de Connection.
 
         return self
