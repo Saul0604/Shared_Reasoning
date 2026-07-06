@@ -1,5 +1,6 @@
 import useChatStore from '../../store/useChatStore'
 import BreadboardCanvas from '../BreadboardCanvas'
+import { Share2, MoreHorizontal, MessageSquare } from 'lucide-react'
 
 export default function VisualPanel() {
   const {
@@ -8,6 +9,8 @@ export default function VisualPanel() {
     setCurrentStep,
     schemaPreviewUrl,
     extractLoading,
+    chatPanelCollapsed,
+    toggleChatPanel,
   } = useChatStore()
 
   const circuit = extractResult?.project?.circuit
@@ -34,51 +37,24 @@ export default function VisualPanel() {
         </div>
         <div className="visual-panel__header-actions">
           <button className="visual-panel__action-btn">
-            ↗ Compartir
+            <Share2 size={16} />
+            Compartir
           </button>
           <button className="visual-panel__more-btn" title="Más opciones">
-            ⋯
+            <MoreHorizontal size={18} />
+          </button>
+          <button
+            className={`visual-panel__chat-toggle ${chatPanelCollapsed ? 'visual-panel__chat-toggle--active' : ''}`}
+            onClick={toggleChatPanel}
+            title={chatPanelCollapsed ? 'Abrir chat' : 'Cerrar chat'}
+          >
+            <MessageSquare size={18} />
           </button>
         </div>
       </div>
 
       {/* Body */}
       <div className="visual-panel__body">
-        {/* Schema preview (uploaded image) */}
-        {schemaPreviewUrl && (
-          <div className="visual-section">
-            <div className="visual-section__header">
-              <div>
-                <div className="visual-section__title">
-                  <span className="visual-section__title-icon">📐</span>
-                  Esquema original
-                </div>
-                <span className="visual-section__subtitle">
-                  Imagen subida por el usuario.
-                </span>
-              </div>
-            </div>
-            <div style={{
-              padding: '16px',
-              display: 'flex',
-              justifyContent: 'center',
-              background: '#faf8f5',
-            }}>
-              <img
-                src={schemaPreviewUrl}
-                alt="Esquema del circuito"
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '250px',
-                  objectFit: 'contain',
-                  borderRadius: '8px',
-                  border: '1px solid #E5E7EB',
-                }}
-              />
-            </div>
-          </div>
-        )}
-
         {/* Protoboard View */}
         <div className="visual-section">
           <div className="visual-section__header">
@@ -89,7 +65,7 @@ export default function VisualPanel() {
               </div>
               <span className="visual-section__subtitle">
                 {circuit
-                  ? 'Renderizado generado a partir del análisis del circuito.'
+                  ? 'Imagen generada por IA a partir de las coordenadas calculadas.'
                   : 'La protoboard aparecerá aquí al analizar un esquema.'}
               </span>
             </div>
@@ -120,6 +96,52 @@ export default function VisualPanel() {
             </div>
           )}
         </div>
+
+        {/* Coordinates Table */}
+        {components.length > 0 && (
+          <div className="visual-section">
+            <div className="visual-coords">
+              <div className="visual-coords__header">
+                <div className="visual-coords__title">
+                  <span>📍</span>
+                  Coordenadas utilizadas
+                </div>
+                <button className="visual-coords__copy-btn" onClick={() => {
+                  const text = components.map(c =>
+                    `${c.type || c.id}: ${c.start_hole || ''} → ${c.end_hole || ''}`
+                  ).join('\n')
+                  navigator.clipboard.writeText(text)
+                }}>
+                  📋 Copiar todo
+                </button>
+              </div>
+
+              <table className="visual-coords__table">
+                <thead>
+                  <tr>
+                    <th>Componente</th>
+                    <th>Conexión / Posición</th>
+                    <th>Descripción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {components.map((comp, i) => (
+                    <tr key={i}>
+                      <td>
+                        <div className="visual-coords__component">
+                          <span className={`visual-coords__dot visual-coords__dot--${comp.color || 'blue'}`} />
+                          {comp.id || comp.type}
+                        </div>
+                      </td>
+                      <td>{comp.start_hole || '—'} → {comp.end_hole || '—'}</td>
+                      <td>{comp.type || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Assembly Steps */}
         {totalSteps > 0 && (
@@ -206,52 +228,6 @@ export default function VisualPanel() {
               >
                 Siguiente →
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* Coordinates Table */}
-        {components.length > 0 && (
-          <div className="visual-section">
-            <div className="visual-coords">
-              <div className="visual-coords__header">
-                <div className="visual-coords__title">
-                  <span>📍</span>
-                  Coordenadas utilizadas
-                </div>
-                <button className="visual-coords__copy-btn" onClick={() => {
-                  const text = components.map(c =>
-                    `${c.type || c.id}: ${c.start_hole || ''} → ${c.end_hole || ''}`
-                  ).join('\n')
-                  navigator.clipboard.writeText(text)
-                }}>
-                  📋 Copiar todo
-                </button>
-              </div>
-
-              <table className="visual-coords__table">
-                <thead>
-                  <tr>
-                    <th>Componente</th>
-                    <th>Conexión / Posición</th>
-                    <th>Tipo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {components.map((comp, i) => (
-                    <tr key={i}>
-                      <td>
-                        <div className="visual-coords__component">
-                          <span className={`visual-coords__dot visual-coords__dot--${comp.color || 'blue'}`} />
-                          {comp.id || comp.type}
-                        </div>
-                      </td>
-                      <td>{comp.start_hole || '—'} → {comp.end_hole || '—'}</td>
-                      <td>{comp.type || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         )}
