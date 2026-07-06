@@ -7,6 +7,7 @@ class ChatSessionBase(SQLModel):
     title: str = Field(default="Nuevo Circuito")
     user_id: int = Field(foreign_key="user.id", index=True)
     schema_image_base64: Optional[str] = Field(default=None)
+    is_favorite: bool = Field(default=False)
 
 class ChatSession(ChatSessionBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -29,6 +30,7 @@ class ChatMessage(ChatMessageBase, table=True):
 class ChatSessionCreate(SQLModel):
     title: Optional[str] = "Nuevo Circuito"
     schema_image_base64: Optional[str] = None
+    is_favorite: Optional[bool] = False
 
 class ChatSessionRead(ChatSessionBase):
     id: int

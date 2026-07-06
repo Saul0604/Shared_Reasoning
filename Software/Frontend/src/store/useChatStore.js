@@ -144,6 +144,26 @@ const useChatStore = create((set, get) => ({
     }
   },
 
+  // Alternar favorito de un proyecto/sesión
+  toggleFavorite: async (sessionId) => {
+    try {
+      const headers = getAuthHeaders()
+      const res = await fetch(`${API_URL}/chat/sessions/${sessionId}/favorite`, {
+        method: 'PATCH',
+        headers
+      })
+
+      if (res.ok) {
+        const updatedSession = await res.json()
+        set((s) => ({
+          sessions: s.sessions.map(sess => sess.id === sessionId ? updatedSession : sess)
+        }))
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err)
+    }
+  },
+
   // Elimina una sesión
   deleteSession: async (sessionId) => {
     try {
@@ -372,6 +392,51 @@ const useChatStore = create((set, get) => ({
   needsImage: (suggestionKey) => {
     return ['explain-circuit', 'convert-protoboard'].includes(suggestionKey)
   },
+
+  // User Authentication State
+  user: null,
+
+  loadCurrentUser: async () => {
+    try {
+      const headers = getAuthHeaders()
+      if (!headers.Authorization) return
+      
+      const res = await fetch(`${API_URL}/auth/me`, { headers })
+      if (res.ok) {
+        const userData = await res.json()
+        set({ user: userData })
+      }
+    } catch (err) {
+      console.error('Error loading current user:', err)
+    }
+  },
+
+  updateProfile: async (fullName, profilePictureBase64) => {
+    try {
+      const headers = getAuthHeaders()
+      if (!headers.Authorization) return
+      
+      const res = await fetch(`${API_URL}/auth/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers
+        },
+        body: JSON.stringify({
+          full_name: fullName,
+          profile_picture_base64: profilePictureBase64
+        })
+      })
+
+      if (res.ok) {
+        const updatedUser = await res.json()
+        set({ user: updatedUser })
+        return updatedUser
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err)
+    }
+  }
 }))
 
 export default useChatStore
