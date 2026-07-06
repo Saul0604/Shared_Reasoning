@@ -9,7 +9,7 @@ function formatTime(ts) {
 }
 
 export default function ChatSidebar() {
-  const { messages, isLoading, extractLoading, sendMessage, chatPanelCollapsed, toggleChatPanel, schemaPreviewUrl } = useChatStore()
+  const { messages, isLoading, extractLoading, sendMessage, chatPanelCollapsed, toggleChatPanel, schemaPreviewUrl, goBackToHistory } = useChatStore()
   const loading = isLoading || extractLoading
   const messagesEndRef = useRef(null)
 
@@ -24,8 +24,23 @@ export default function ChatSidebar() {
         {/* Header */}
         <div className="chat-sidebar__header">
           <div className="chat-sidebar__header-left">
+            <button
+              className="chat-sidebar__back-btn"
+              onClick={() => goBackToHistory()}
+              title="Volver a mis chats"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '16px',
+                marginRight: '8px',
+                color: '#475569'
+              }}
+            >
+              ⬅️
+            </button>
             <span className="chat-sidebar__title">
-              Chat elektra <span className="chat-sidebar__title-arrow">▾</span>
+              Tutor Elektra
             </span>
           </div>
           <button

@@ -23,16 +23,22 @@ def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Dep
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        print(f"[DEBUG AUTH] Decodificando token: {token[:20]}...")
+        print(f"[DEBUG AUTH] Usando SECRET_KEY: {settings.SECRET_KEY[:10]}... | ALGORITHM: {settings.ALGORITHM}")
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
+        print(f"[DEBUG AUTH] Token decodificado con éxito. Email: {email}")
         if email is None:
+            print("[DEBUG AUTH] Error: El campo 'sub' (email) es nulo.")
             raise credentials_exception
-    except JWTError:
+    except JWTError as e:
+        print(f"[DEBUG AUTH] Falló decodificación de JWT por error: {str(e)}")
         raise credentials_exception
         
     statement = select(User).where(User.email == email)
     user = session.exec(statement).first()
     if user is None:
+        print(f"[DEBUG AUTH] Error: No se encontró al usuario {email} en la base de datos.")
         raise credentials_exception
     return user
 
