@@ -519,6 +519,37 @@
   background: #F3F4F6;
 }
 
+/* Chat toggle in header */
+.visual-panel__chat-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+  background: white;
+  color: #6B7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.visual-panel__chat-toggle:hover {
+  background: #EFF6FF;
+  border-color: #2563EB;
+  color: #2563EB;
+}
+
+.visual-panel__chat-toggle--active {
+  background: #2563EB;
+  border-color: #2563EB;
+  color: white;
+}
+
+.visual-panel__chat-toggle--active:hover {
+  background: #1d4ed8;
+}
+
 /* Visual Content Body */
 .visual-panel__body {
   padding: 32px;
@@ -712,11 +743,12 @@
 
 /* ===== Chat Sidebar (Copilot Mode) ===== */
 .chat-sidebar {
-  width: 360px;
-  min-width: 360px;
+  width: 340px;
+  min-width: 340px;
   height: 100%;
   background: white;
   border-left: 1px solid #E5E7EB;
+  border-radius: 16px 0 0 16px;
   display: flex;
   flex-direction: column;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
@@ -916,6 +948,12 @@
   box-shadow: 0 6px 24px rgba(37, 99, 235, 0.45);
 }
 
+/* Wrapper for circuit thumbnail below input */
+.sidebar-circuit-thumb-wrapper {
+  padding: 0 16px 12px;
+  flex-shrink: 0;
+}
+
 /* Sidebar steps styling */
 .sidebar-step {
   display: flex;
@@ -998,6 +1036,57 @@
   justify-content: center;
   font-size: 28px;
   color: #94A3B8;
+  overflow: hidden;
+}
+
+.sidebar-circuit-thumb__image--expanded {
+  height: auto;
+  max-height: 200px;
+}
+
+/* Fullscreen Schema Modal */
+.schema-fullscreen-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 40px;
+  backdrop-filter: blur(4px);
+}
+
+.schema-fullscreen-modal__close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.schema-fullscreen-modal__close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.schema-fullscreen-modal__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
 /* ===================================================
