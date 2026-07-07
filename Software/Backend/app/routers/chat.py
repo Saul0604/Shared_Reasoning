@@ -10,6 +10,7 @@ from app.models.chat import (
     ChatSession, ChatSessionCreate, ChatSessionRead,
     ChatMessage, ChatMessageRead
 )
+from app.models.share import ProjectShare
 from app.schemas.chat import ChatRequest, ChatResponse, ChatMessage as SchemaChatMessage
 from app.services.chat_service import ChatService
 
@@ -19,6 +20,26 @@ router = APIRouter(
 )
 
 service = ChatService()
+
+def check_session_access(chat_id: int, user_id: int, session: Session) -> ChatSession:
+    db_session = session.get(ChatSession, chat_id)
+    if not db_session:
+        raise HTTPException(status_code=404, detail="Sesión de chat no encontrada")
+        
+    # Si es el dueño
+    if db_session.user_id == user_id:
+        return db_session
+        
+    # Si ha sido compartida con él
+    statement = select(ProjectShare).where(
+        ProjectShare.chat_session_id == chat_id,
+        ProjectShare.shared_to_user_id == user_id
+    )
+    is_shared = session.exec(statement).first()
+    if is_shared:
+        return db_session
+        
+    raise HTTPException(status_code=404, detail="Sesión de chat no encontrada")
 
 # 1. Listar todas las sesiones de chat del usuario autenticado
 @router.get("/sessions", response_model=List[ChatSessionRead])
@@ -85,9 +106,7 @@ def get_session_messages(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    db_session = session.get(ChatSession, chat_id)
-    if not db_session or db_session.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Sesión de chat no encontrada")
+    db_session = check_session_access(chat_id, current_user.id, session)
     
     statement = select(ChatMessage).where(ChatMessage.chat_session_id == chat_id).order_by(ChatMessage.timestamp.asc())
     return session.exec(statement).all()
@@ -100,10 +119,8 @@ def post_chat_message(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    # Validar propiedad del chat
-    db_session = session.get(ChatSession, chat_id)
-    if not db_session or db_session.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Sesión de chat no encontrada")
+    # Validar propiedad del chat (o acceso compartido)
+    db_session = check_session_access(chat_id, current_user.id, session)
 
     # 1. Llamar primero al servicio de la IA. Si esto falla, no guardamos nada en BD.
     try:

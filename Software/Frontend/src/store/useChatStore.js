@@ -60,7 +60,7 @@ const useChatStore = create((set, get) => ({
       const headers = getAuthHeaders()
       
       // Buscar la sesión actual para restaurar su imagen esquema
-      const activeSession = get().sessions.find(s => s.id === sessionId)
+      const activeSession = get().sessions.find(s => s.id === sessionId) || get().sharedSessions.find(s => s.id === sessionId)
       let imagePreview = null
       if (activeSession && activeSession.schema_image_base64) {
         imagePreview = activeSession.schema_image_base64.startsWith('data:')
@@ -444,6 +444,67 @@ const useChatStore = create((set, get) => ({
     } catch (err) {
       console.error('Error updating profile:', err)
     }
+  },
+
+  // Compartidos state
+  sharedSessions: [],
+
+  loadSharedProjects: async () => {
+    try {
+      const headers = getAuthHeaders()
+      if (!headers.Authorization) return
+      
+      const res = await fetch(`${API_URL}/share/received`, { headers })
+      if (res.ok) {
+        const data = await res.json()
+        set({ sharedSessions: data })
+      }
+    } catch (err) {
+      console.error('Error loading shared projects:', err)
+    }
+  },
+
+  generateShareLink: async (chatId) => {
+    try {
+      const headers = getAuthHeaders()
+      if (!headers.Authorization) return null
+      
+      const res = await fetch(`${API_URL}/share/sessions/${chatId}`, {
+        method: 'POST',
+        headers
+      })
+      if (res.ok) {
+        const token = await res.json()
+        // Retornar la URL de compartir local
+        const frontendUrl = window.location.origin
+        return `${frontendUrl}/app/proyectos/share/${token}`
+      }
+    } catch (err) {
+      console.error('Error generating share link:', err)
+    }
+    return null
+  },
+
+  claimSharedProject: async (token) => {
+    try {
+      const headers = getAuthHeaders()
+      if (!headers.Authorization) return null
+      
+      const res = await fetch(`${API_URL}/share/resolve/${token}`, {
+        method: 'POST',
+        headers
+      })
+      if (res.ok) {
+        const project = await res.json()
+        // Recargar las sesiones del usuario para que incluya la nueva sesión recibida
+        await get().loadSessions()
+        await get().loadSharedProjects()
+        return project
+      }
+    } catch (err) {
+      console.error('Error claiming shared project:', err)
+    }
+    return null
   }
 }))
 

@@ -2,11 +2,13 @@ from sqlmodel import SQLModel, Field
 from typing import Optional, List
 from datetime import datetime
 import json
+from sqlalchemy import Column
+from sqlalchemy.dialects.mysql import LONGTEXT
 
 class ChatSessionBase(SQLModel):
     title: str = Field(default="Nuevo Circuito")
     user_id: int = Field(foreign_key="user.id", index=True)
-    schema_image_base64: Optional[str] = Field(default=None)
+    schema_image_base64: Optional[str] = Field(default=None, sa_column=Column(LONGTEXT))
     is_favorite: bool = Field(default=False)
 
 class ChatSession(ChatSessionBase, table=True):
@@ -21,9 +23,10 @@ class ChatMessage(ChatMessageBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     chat_session_id: int = Field(foreign_key="chatsession.id", ondelete="CASCADE", index=True)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    content: str = Field(sa_column=Column(LONGTEXT))
     
     # Contexto persistido serializado en JSON (opcional)
-    project_context_json: Optional[str] = Field(default=None)
+    project_context_json: Optional[str] = Field(default=None, sa_column=Column(LONGTEXT))
     current_step: Optional[int] = Field(default=None)
 
 # Schemas para validación y APIs

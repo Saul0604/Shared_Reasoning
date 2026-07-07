@@ -9,12 +9,14 @@ export default function Proyectos() {
   const { 
     visualMode, 
     loadSessions,
+    loadSharedProjects,
     currentSessionId
   } = useChatStore()
 
   // Configurar vista adecuada según la ruta activa al montar el componente
   useEffect(() => {
     loadSessions()
+    loadSharedProjects()
     const isProjectsRoute = window.location.pathname.includes('proyectos')
     useChatStore.setState({ 
       chatViewMode: isProjectsRoute ? 'history' : 'new_chat' 
