@@ -10,6 +10,7 @@ class ChatSessionBase(SQLModel):
     user_id: int = Field(foreign_key="user.id", index=True)
     schema_image_base64: Optional[str] = Field(default=None, sa_column=Column(LONGTEXT))
     is_favorite: bool = Field(default=False)
+    is_archived: bool = Field(default=False)
 
 class ChatSession(ChatSessionBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

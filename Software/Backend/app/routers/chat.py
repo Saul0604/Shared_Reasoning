@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session, select, SQLModel
 from typing import List
 import json
 
@@ -44,10 +44,14 @@ def check_session_access(chat_id: int, user_id: int, session: Session) -> ChatSe
 # 1. Listar todas las sesiones de chat del usuario autenticado
 @router.get("/sessions", response_model=List[ChatSessionRead])
 def get_sessions(
+    include_archived: bool = False,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    statement = select(ChatSession).where(ChatSession.user_id == current_user.id).order_by(ChatSession.created_at.desc())
+    statement = select(ChatSession).where(
+        ChatSession.user_id == current_user.id,
+        ChatSession.is_archived == include_archived
+    ).order_by(ChatSession.created_at.desc())
     return session.exec(statement).all()
 
 # 2. Crear una nueva sesión de chat
@@ -80,6 +84,44 @@ def toggle_favorite_session(
         raise HTTPException(status_code=404, detail="Sesión de chat no encontrada")
     
     db_session.is_favorite = not db_session.is_favorite
+    session.add(db_session)
+    session.commit()
+    session.refresh(db_session)
+    return db_session
+
+class ChatSessionTitleUpdate(SQLModel):
+    title: str
+
+# Actualizar el título de una sesión de chat manualmente
+@router.patch("/sessions/{chat_id}/title", response_model=ChatSessionRead)
+def update_session_title(
+    chat_id: int,
+    title_in: ChatSessionTitleUpdate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    db_session = session.get(ChatSession, chat_id)
+    if not db_session or db_session.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Sesión de chat no encontrada")
+        
+    db_session.title = title_in.title
+    session.add(db_session)
+    session.commit()
+    session.refresh(db_session)
+    return db_session
+
+# Archivar o desarchivar una sesión de chat
+@router.patch("/sessions/{chat_id}/archive", response_model=ChatSessionRead)
+def toggle_archive_session(
+    chat_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    db_session = session.get(ChatSession, chat_id)
+    if not db_session or db_session.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Sesión de chat no encontrada")
+        
+    db_session.is_archived = not db_session.is_archived
     session.add(db_session)
     session.commit()
     session.refresh(db_session)

@@ -11,11 +11,13 @@ const getAuthHeaders = () => {
 const useChatStore = create((set, get) => ({
   // Sessions
   sessions: [],
+  archivedSessions: [],
   currentSessionId: null,
 
   // Messages
   messages: [],
   isLoading: false,
+  dashboardLoading: false,
 
   // Visual mode
   visualMode: false,
@@ -39,6 +41,10 @@ const useChatStore = create((set, get) => ({
 
   // Carga todas las sesiones de chat del usuario autenticado
   loadSessions: async () => {
+    const sessionsEmpty = get().sessions.length === 0
+    if (sessionsEmpty) {
+      set({ dashboardLoading: true })
+    }
     try {
       const headers = getAuthHeaders()
       if (!headers.Authorization) return
@@ -50,6 +56,8 @@ const useChatStore = create((set, get) => ({
       }
     } catch (err) {
       console.error('Error loading sessions:', err)
+    } finally {
+      set({ dashboardLoading: false })
     }
   },
 
@@ -505,6 +513,71 @@ const useChatStore = create((set, get) => ({
       console.error('Error claiming shared project:', err)
     }
     return null
+  },
+
+  renameSession: async (chatId, newTitle) => {
+    try {
+      const headers = getAuthHeaders()
+      if (!headers.Authorization) return false
+      
+      const res = await fetch(`${API_URL}/chat/sessions/${chatId}/title`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers
+        },
+        body: JSON.stringify({ title: newTitle })
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        
+        // Actualizar localmente en sessions
+        const updatedSessions = get().sessions.map(s => 
+          s.id === chatId ? { ...s, title: updated.title } : s
+        )
+        set({ sessions: updatedSessions })
+        return true
+      }
+    } catch (err) {
+      console.error('Error renaming session:', err)
+    }
+    return false
+  },
+
+  loadArchivedSessions: async () => {
+    try {
+      const headers = getAuthHeaders()
+      if (!headers.Authorization) return
+      
+      const res = await fetch(`${API_URL}/chat/sessions?include_archived=true`, { headers })
+      if (res.ok) {
+        const data = await res.json()
+        set({ archivedSessions: data })
+      }
+    } catch (err) {
+      console.error('Error loading archived sessions:', err)
+    }
+  },
+
+  toggleArchiveSession: async (chatId) => {
+    try {
+      const headers = getAuthHeaders()
+      if (!headers.Authorization) return false
+      
+      const res = await fetch(`${API_URL}/chat/sessions/${chatId}/archive`, {
+        method: 'PATCH',
+        headers
+      })
+      if (res.ok) {
+        // Recargar ambas listas
+        await get().loadSessions()
+        await get().loadArchivedSessions()
+        return true
+      }
+    } catch (err) {
+      console.error('Error archiving session:', err)
+    }
+    return false
   }
 }))
 

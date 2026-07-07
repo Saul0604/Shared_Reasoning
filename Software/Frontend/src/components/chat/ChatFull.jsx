@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import useChatStore from '../../store/useChatStore'
 import ChatInput from './ChatInput'
 import MarkdownBubble from './MarkdownBubble'
-import { Cpu, Route, Zap, CircuitBoard, Share2, Clipboard } from 'lucide-react'
+import { Cpu, Route, Zap, CircuitBoard, Share2, Clipboard, Edit, Loader2, Archive } from 'lucide-react'
 
 const suggestions = [
   {
@@ -40,6 +40,10 @@ const suggestions = [
 export default function ChatFull() {
   const [activeTab, setActiveTab] = useState('mis_proyectos')
   const [toastMessage, setToastMessage] = useState(null)
+  
+  // Estados para renombrar
+  const [editingSessionId, setEditingSessionId] = useState(null)
+  const [editTitleValue, setEditTitleValue] = useState('')
 
   const { 
     messages, 
@@ -48,6 +52,7 @@ export default function ChatFull() {
     extractFromImage, 
     extractLoading,
     sessions,
+    archivedSessions,
     currentSessionId,
     selectSession,
     createNewSession,
@@ -58,7 +63,10 @@ export default function ChatFull() {
     toggleFavorite,
     sharedSessions,
     loadSharedProjects,
-    generateShareLink
+    generateShareLink,
+    renameSession,
+    dashboardLoading,
+    toggleArchiveSession
   } = useChatStore()
 
   const token = localStorage.getItem('access_token')
@@ -86,6 +94,22 @@ export default function ChatFull() {
     }
   }
 
+  const handleRenameSave = async (sessionId) => {
+    if (editTitleValue.trim()) {
+      await renameSession(sessionId, editTitleValue.trim())
+    }
+    setEditingSessionId(null)
+  }
+
+  const handleArchiveToggle = async (e, chatId, isCurrentlyArchived) => {
+    e.stopPropagation()
+    const success = await toggleArchiveSession(chatId)
+    if (success) {
+      setToastMessage(isCurrentlyArchived ? '¡Proyecto restaurado! 📂' : '¡Proyecto archivado! 📦')
+      setTimeout(() => setToastMessage(null), 3000)
+    }
+  }
+
   const loading = isLoading || extractLoading
 
   const handleSuggestionClick = (suggestion) => {
@@ -109,7 +133,11 @@ export default function ChatFull() {
     const favoritos = sessions.filter(sess => sess.is_favorite)
     
     // Determinar qué proyectos mostrar según la pestaña seleccionada
-    const proyectosAMostrar = activeTab === 'compartidos' ? sharedSessions : sessions
+    const proyectosAMostrar = activeTab === 'compartidos' 
+      ? sharedSessions 
+      : activeTab === 'archivados'
+        ? archivedSessions
+        : sessions
 
     return (
       <div className="projects-dashboard">
@@ -179,9 +207,17 @@ export default function ChatFull() {
           {/* Columna Izquierda: Grid de Proyectos */}
           <div className="projects-dashboard__main-col">
             
-            {/* Sección Favoritos - Solo se muestra en 'Mis proyectos' */}
-            {activeTab === 'mis_proyectos' && (
-              <div className="projects-section">
+            {dashboardLoading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center' }}>
+                <Loader2 size={36} className="premium-spinner" style={{ color: '#2563eb', marginBottom: '12px' }} />
+                <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b', margin: '0 0 4px 0' }}>Buscando tus proyectos...</h3>
+                <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Consultando tus diagramas y simulaciones en la base de datos.</p>
+              </div>
+            ) : (
+              <>
+                {/* Sección Favoritos - Solo se muestra en 'Mis proyectos' */}
+                {activeTab === 'mis_proyectos' && (
+                  <div className="projects-section">
                 <h2 className="projects-section__title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                   Favoritos
@@ -242,9 +278,82 @@ export default function ChatFull() {
                             >
                               <Share2 size={12} />
                             </button>
+                            <button 
+                              className="project-card__archive-btn"
+                              onClick={(e) => handleArchiveToggle(e, sess.id, false)}
+                              title="Archivar proyecto"
+                              style={{
+                                position: 'absolute',
+                                top: '10px',
+                                right: '74px',
+                                background: 'white',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '50%',
+                                width: '26px',
+                                height: '26px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: '#64748b',
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                                transition: 'all 0.15s',
+                                zIndex: 10
+                              }}
+                            >
+                              <Archive size={12} />
+                            </button>
                           </div>
                           <div className="project-card__content">
-                            <h4 className="project-card__name">{sess.title}</h4>
+                            {editingSessionId === sess.id ? (
+                              <input
+                                type="text"
+                                value={editTitleValue}
+                                onChange={(e) => setEditTitleValue(e.target.value)}
+                                onBlur={() => handleRenameSave(sess.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleRenameSave(sess.id)
+                                  if (e.key === 'Escape') setEditingSessionId(null)
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                autoFocus
+                                style={{
+                                  width: '100%',
+                                  padding: '4px 8px',
+                                  fontSize: '14px',
+                                  fontWeight: '700',
+                                  border: '2px solid #2563eb',
+                                  borderRadius: '6px',
+                                  outline: 'none',
+                                  color: '#1e293b'
+                                }}
+                              />
+                            ) : (
+                              <h4 className="project-card__name" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                <span>{sess.title}</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setEditingSessionId(sess.id)
+                                    setEditTitleValue(sess.title)
+                                  }}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: '#94a3b8',
+                                    padding: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    borderRadius: '4px',
+                                    transition: 'color 0.2s'
+                                  }}
+                                  title="Editar nombre"
+                                >
+                                  <Edit size={12} />
+                                </button>
+                              </h4>
+                            )}
                             <p className="project-card__desc">Diseño y simulación de un circuito de electrónica.</p>
                             <div className="project-card__tags">
                               {hasImage ? (
@@ -352,9 +461,82 @@ export default function ChatFull() {
                           >
                             <Share2 size={12} />
                           </button>
+                          <button 
+                            className="project-card__archive-btn"
+                            onClick={(e) => handleArchiveToggle(e, sess.id, sess.is_archived)}
+                            title={sess.is_archived ? "Desarchivar proyecto" : "Archivar proyecto"}
+                            style={{
+                              position: 'absolute',
+                              top: '10px',
+                              right: '74px',
+                              background: 'white',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '50%',
+                              width: '26px',
+                              height: '26px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              color: sess.is_archived ? '#2563eb' : '#64748b',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                              transition: 'all 0.15s',
+                              zIndex: 10
+                            }}
+                          >
+                            <Archive size={12} />
+                          </button>
                         </div>
                         <div className="project-card__content">
-                          <h4 className="project-card__name">{sess.title}</h4>
+                          {editingSessionId === sess.id ? (
+                            <input
+                              type="text"
+                              value={editTitleValue}
+                              onChange={(e) => setEditTitleValue(e.target.value)}
+                              onBlur={() => handleRenameSave(sess.id)}
+                              onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleRenameSave(sess.id)
+                                  if (e.key === 'Escape') setEditingSessionId(null)
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                              style={{
+                                width: '100%',
+                                padding: '4px 8px',
+                                fontSize: '14px',
+                                fontWeight: '700',
+                                border: '2px solid #2563eb',
+                                borderRadius: '6px',
+                                outline: 'none',
+                                color: '#1e293b'
+                              }}
+                            />
+                          ) : (
+                            <h4 className="project-card__name" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                              <span>{sess.title}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setEditingSessionId(sess.id)
+                                  setEditTitleValue(sess.title)
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#94a3b8',
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  borderRadius: '4px',
+                                  transition: 'color 0.2s'
+                                }}
+                                title="Editar nombre"
+                              >
+                                <Edit size={12} />
+                              </button>
+                            </h4>
+                          )}
                           <p className="project-card__desc">Esquema electrónico y simulación de hardware.</p>
                           <div className="project-card__tags">
                             {hasImage ? (
@@ -391,11 +573,12 @@ export default function ChatFull() {
                       </div>
                     )
                   })}
-                </div>
-              )}
-            </div>
-
-          </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
 
           {/* Columna Derecha: Widgets */}
           <aside className="projects-dashboard__side-col">
