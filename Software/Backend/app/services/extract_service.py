@@ -5,12 +5,12 @@ from app.schemas.extract import ExtractResponse
 from app.schemas.circuit import Circuit
 from app.schemas.component import Component, Pin
 from app.schemas.connection import Connection
-from app.services.gemini_service import gemini_service
+from app.services.gemini_service import get_ai_service
 
 
 class ExtractService:
 
-    def extract(self, image: str):
+    def extract(self, image: str, provider: str = None):
         # Si la imagen es de prueba, corta o vacía, usamos el simulador
         if not image or len(image) < 100 or "base64_string_aqui" in image:
             circuit = Circuit(
@@ -84,7 +84,8 @@ class ExtractService:
         
         try:
             # 1. Extraemos la Netlist lógica de la IA
-            logical_netlist = gemini_service.extract_logical_netlist_from_image(image)
+            ai_service = get_ai_service(provider)
+            logical_netlist = ai_service.extract_logical_netlist_from_image(image)
             
             # DEBUG: Imprimir la netlist lógica que devolvió la IA
             print("\n" + "="*60)

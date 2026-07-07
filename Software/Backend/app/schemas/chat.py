@@ -14,6 +14,7 @@ class ChatRequest(BaseModel):
     last_verification_feedback: Optional[str] = None
     circuit_context: Optional[Any] = None  # Generic/backwards compatibility
     project_context: Optional[Any] = None  # Full Project schema dict/JSON
+    provider: Optional[str] = None  # Proveedor de IA: "gemini", "openai", "local"
 
 
 class ChatResponse(BaseModel):

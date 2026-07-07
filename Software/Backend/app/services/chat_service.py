@@ -1,11 +1,11 @@
 from app.schemas.chat import ChatRequest, ChatResponse
-from app.services.gemini_service import gemini_service
+from app.services.gemini_service import get_ai_service
 import json
 
 
 class ChatService:
 
-    def chat(self, request: ChatRequest) -> ChatResponse:
+    def chat(self, request: ChatRequest, provider: str = None) -> ChatResponse:
         # System instructions con lineamientos pedagógicos claros
         system_content = (
             "Eres un tutor experto y amigable de electrónica para el proyecto "
@@ -69,7 +69,8 @@ class ChatService:
             "content": request.message
         })
 
-        # Consumir el servicio de Gemini
-        reply = gemini_service.chat_completion(system_content, messages)
+        # Consumir el servicio de IA (proveedor dinámico)
+        ai_service = get_ai_service(provider)
+        reply = ai_service.chat_completion(system_content, messages)
         return ChatResponse(reply=reply)
 

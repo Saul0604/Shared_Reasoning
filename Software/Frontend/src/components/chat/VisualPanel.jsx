@@ -107,9 +107,10 @@ export default function VisualPanel() {
                   Coordenadas utilizadas
                 </div>
                 <button className="visual-coords__copy-btn" onClick={() => {
-                  const text = components.map(c =>
-                    `${c.type || c.id}: ${c.start_hole || ''} → ${c.end_hole || ''}`
-                  ).join('\n')
+                  const text = components.map(c => {
+                    const pos = c.pins ? c.pins.map(p => p.position).filter(Boolean).join(' → ') : '';
+                    return `${c.type || c.id}: ${pos}`
+                  }).join('\n')
                   navigator.clipboard.writeText(text)
                 }}>
                   📋 Copiar todo
@@ -125,18 +126,23 @@ export default function VisualPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {components.map((comp, i) => (
-                    <tr key={i}>
-                      <td>
-                        <div className="visual-coords__component">
-                          <span className={`visual-coords__dot visual-coords__dot--${comp.color || 'blue'}`} />
-                          {comp.id || comp.type}
-                        </div>
-                      </td>
-                      <td>{comp.start_hole || '—'} → {comp.end_hole || '—'}</td>
-                      <td>{comp.type || '—'}</td>
-                    </tr>
-                  ))}
+                  {components.map((comp, i) => {
+                    const posText = comp.pins && comp.pins.length > 0 
+                      ? comp.pins.map(p => p.position).filter(Boolean).join(' → ') || '—'
+                      : '—';
+                    return (
+                      <tr key={i}>
+                        <td>
+                          <div className="visual-coords__component">
+                            <span className={`visual-coords__dot visual-coords__dot--${comp.color || 'blue'}`} />
+                            {comp.id || comp.type}
+                          </div>
+                        </td>
+                        <td>{posText}</td>
+                        <td>{comp.type || '—'}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

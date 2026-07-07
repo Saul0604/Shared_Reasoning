@@ -1,25 +1,42 @@
 import { useState, useRef, useEffect } from 'react'
+import useChatStore from '../../store/useChatStore'
+
+const MODEL_OPTIONS = [
+  { value: 'gemini', label: 'Gemini 2.5' },
+  { value: 'openai', label: 'GPT-4o' },
+  { value: 'local', label: 'Local' },
+]
 
 export default function ChatInput({ onSend, isLoading, compact = false }) {
   const [text, setText] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [modelMenuOpen, setModelMenuOpen] = useState(false)
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const fileInputRef = useRef(null)
   const menuRef = useRef(null)
+  const modelMenuRef = useRef(null)
 
-  // Close menu on outside click
+  const selectedProvider = useChatStore((s) => s.selectedProvider)
+  const setProvider = useChatStore((s) => s.setProvider)
+
+  const currentModel = MODEL_OPTIONS.find((m) => m.value === selectedProvider) || MODEL_OPTIONS[0]
+
+  // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false)
       }
+      if (modelMenuRef.current && !modelMenuRef.current.contains(e.target)) {
+        setModelMenuOpen(false)
+      }
     }
-    if (menuOpen) {
+    if (menuOpen || modelMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside)
     }
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [menuOpen])
+  }, [menuOpen, modelMenuOpen])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -161,9 +178,37 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
           disabled={isLoading}
         />
 
-        <button type="button" className="chat-input__version" title="Cambiar versión">
-          3.1 Pro <span className="chat-input__version-arrow">▾</span>
-        </button>
+        {/* Model selector dropdown */}
+        <div className="chat-input__model-wrapper" ref={modelMenuRef}>
+          <button
+            type="button"
+            className="chat-input__version"
+            title="Cambiar modelo de IA"
+            onClick={() => setModelMenuOpen(!modelMenuOpen)}
+          >
+            {currentModel.label} <span className="chat-input__version-arrow">▾</span>
+          </button>
+
+          {modelMenuOpen && (
+            <div className="chat-input__model-menu">
+              {MODEL_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`chat-input__model-option ${selectedProvider === opt.value ? 'chat-input__model-option--active' : ''}`}
+                  onClick={() => {
+                    setProvider(opt.value)
+                    setModelMenuOpen(false)
+                  }}
+                >
+                  <span className="chat-input__model-dot" />
+                  {opt.label}
+                  {selectedProvider === opt.value && <span className="chat-input__model-check">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <button
           className="chat-input__send"
