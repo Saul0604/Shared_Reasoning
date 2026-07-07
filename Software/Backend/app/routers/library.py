@@ -11,15 +11,27 @@ from app.routers.auth import get_current_user
 from app.models.user import User
 from app.models.library import LibraryMaterial
 
+import fitz  # PyMuPDF
+
 router = APIRouter(
     prefix="/library",
     tags=["Library"],
 )
 
 UPLOAD_DIR = os.path.join("uploads", "library")
+COVERS_DIR = os.path.join(UPLOAD_DIR, "covers")
 
-# Asegurar que el directorio de uploads exista
+# Asegurar que los directorios existan
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(COVERS_DIR, exist_ok=True)
+
+# Servir las portadas de los libros
+@router.get("/covers/{filename}")
+def get_cover_image(filename: str):
+    cover_path = os.path.join(COVERS_DIR, filename)
+    if not os.path.exists(cover_path):
+        raise HTTPException(status_code=404, detail="Portada no encontrada")
+    return FileResponse(cover_path)
 
 # 1. Subir material de estudio (Libros, PDFs, Guías, Datasheets)
 @router.post("/upload", response_model=LibraryMaterial)
@@ -61,6 +73,26 @@ def upload_material(
     session.add(db_material)
     session.commit()
     session.refresh(db_material)
+
+    # Si es PDF, generar la portada automáticamente de la primera página
+    if ext == ".pdf":
+        try:
+            doc = fitz.open(dest_path)
+            if len(doc) > 0:
+                page = doc[0]  # Primera página
+                pix = page.get_pixmap(dpi=150)  # Renderizar a imagen pixmap
+                cover_filename = f"{db_material.id}.png"
+                cover_dest = os.path.join(COVERS_DIR, cover_filename)
+                pix.save(cover_dest)
+                
+                # Guardar el endpoint url en la base de datos
+                db_material.cover_image_url = f"/library/covers/{cover_filename}"
+                session.add(db_material)
+                session.commit()
+                session.refresh(db_material)
+        except Exception as pdf_err:
+            print(f"Advertencia: No se pudo generar la portada del PDF. Error: {str(pdf_err)}")
+            # Dejar cover_image_url en None en caso de fallo, se usará un fallback en el frontend
     
     return db_material
 
