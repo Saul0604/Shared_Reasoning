@@ -107,7 +107,7 @@ def post_chat_message(
 
     # 1. Llamar primero al servicio de la IA. Si esto falla, no guardamos nada en BD.
     try:
-        response = service.chat(request)
+        response = service.chat(request, provider=request.provider)
     except Exception as e:
         # Si la IA falla (ej. sin tokens, timeout, etc.), lanzamos error sin guardar
         raise HTTPException(
@@ -155,4 +155,4 @@ def post_chat_message(
 # Endpoint legacy/anterior para compatibilidad si no está logueado
 @router.post("", response_model=ChatResponse)
 def chat_legacy(request: ChatRequest):
-    return service.chat(request)
+    return service.chat(request, provider=request.provider)

@@ -28,10 +28,14 @@ const useChatStore = create((set, get) => ({
   schemaPreviewUrl: null,    // URL of the uploaded schema image
   extractLoading: false,
 
+  // AI Provider selection
+  selectedProvider: 'gemini', // 'gemini' | 'openai' | 'local'
+
   // Actions
   toggleChatPanel: () => set((s) => ({ chatPanelCollapsed: !s.chatPanelCollapsed })),
   setChatPanelCollapsed: (v) => set({ chatPanelCollapsed: v }),
   setCurrentStep: (step) => set({ currentStep: step }),
+  setProvider: (provider) => set({ selectedProvider: provider }),
 
   // Carga todas las sesiones de chat del usuario autenticado
   loadSessions: async () => {
@@ -253,7 +257,9 @@ const useChatStore = create((set, get) => ({
       // 1. Send to /extract
       const formData = new FormData()
       formData.append('file', file)
-      const extractRes = await fetch(`${API_URL}/extract`, {
+      const provider = get().selectedProvider
+      const extractUrl = provider ? `${API_URL}/extract?provider=${provider}` : `${API_URL}/extract`
+      const extractRes = await fetch(extractUrl, {
         method: 'POST',
         body: formData,
       })
@@ -270,6 +276,7 @@ const useChatStore = create((set, get) => ({
         message: 'He subido un diagrama de circuito. Analiza los componentes y explícame paso a paso cómo armarlo en la protoboard.',
         history,
         project_context: extractData?.project || null,
+        provider: get().selectedProvider,
       }
 
       const chatEndpoint = sessionId 
@@ -360,6 +367,7 @@ const useChatStore = create((set, get) => ({
           history,
           project_context: extractResult?.project || null,
           current_step: extractResult ? get().currentStep : null,
+          provider: get().selectedProvider,
         }),
       })
 
