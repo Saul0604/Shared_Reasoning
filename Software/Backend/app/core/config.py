@@ -12,8 +12,7 @@ class Settings:
     LOCAL_MODEL_NAME = os.getenv("LOCAL_MODEL_NAME", "llama3.2-vision")  # Nombre del modelo local (ej: llama3.2-vision, qwen2.5-coder, etc.)
 
     # Configuración de Base de Datos
-    # Por defecto crea un archivo local SQLite (sqlite:///./database.db)
-    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./database.db")
+    DATABASE_URL = os.getenv("DATABASE_URL", "mysql+pymysql://db_admin:password123@34.29.129.197:3306/elektra")
 
     # Configuración de JWT Security
     SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key-shared-reasoning-2026")

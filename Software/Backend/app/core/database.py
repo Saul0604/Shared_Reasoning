@@ -1,12 +1,7 @@
 from sqlmodel import create_engine, SQLModel, Session
 from app.core.config import settings
 
-# Determinar si estamos usando SQLite para habilitar el thread compatibility
-connect_args = {}
-if settings.DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
-
-engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
+engine = create_engine(settings.DATABASE_URL)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)

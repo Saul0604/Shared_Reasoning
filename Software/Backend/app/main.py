@@ -29,11 +29,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.routers import share
+from app.routers import library
+
 app.include_router(health.router)
 app.include_router(extract.router)
 app.include_router(verify.router)
 app.include_router(chat.router)
 app.include_router(auth.router)
+app.include_router(share.router)
+app.include_router(library.router)
 
 from app.core.config import settings
 

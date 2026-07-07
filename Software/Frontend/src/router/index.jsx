@@ -11,6 +11,7 @@ import Classes from '../pages/Classes'
 import Settings from '../pages/Settings'
 import Profile from '../pages/Profile'
 import Help from '../pages/Help'
+import ShareResolver from '../pages/ShareResolver'
 
 // Guardián para proteger rutas privadas
 function ProtectedRoute() {
@@ -37,6 +38,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="proyectos" replace /> },
           { path: 'proyectos', element: <Proyectos /> },
+          { path: 'proyectos/share/:token', element: <ShareResolver /> },
           { path: 'new-chat', element: <Proyectos /> },
           { path: 'library', element: <Library /> },
           { path: 'components', element: <Components /> },

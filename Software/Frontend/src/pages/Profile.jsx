@@ -60,8 +60,17 @@ export default function Profile() {
   }
 
   return (
-    <div className="profile-container" style={{ padding: '32px 40px', background: '#fafbfc', height: '100%', overflowY: 'auto' }}>
-      <div className="profile-card" style={{ maxWidth: '640px', background: 'white', borderRadius: '20px', padding: '40px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', border: '1px solid #edf2f7', margin: '0 auto' }}>
+    <div className="profile-container" style={{ 
+      padding: '40px', 
+      background: '#ffffff', 
+      height: '100%', 
+      width: '100%',
+      boxSizing: 'border-box',
+      overflowY: 'auto',
+      borderRadius: '18px',
+      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)'
+    }}>
+      <div className="profile-card" style={{ maxWidth: '580px', margin: '0 auto' }}>
         
         <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#1e293b', margin: '0 0 8px 0' }}>Mi Perfil</h1>
         <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 32px 0' }}>Administra tu información personal y foto de perfil en Elektra.</p>
