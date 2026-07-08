@@ -87,6 +87,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
 class UserProfileUpdate(SQLModel):
     full_name: Optional[str] = None
     profile_picture_base64: Optional[str] = None
+    skill_level: Optional[str] = None  # "Principiante" | "Intermedio" | "Avanzado"
 
 @router.get("/me", response_model=UserRead)
 def read_users_me(current_user: User = Depends(get_current_user)):
@@ -102,6 +103,8 @@ def update_profile(
         current_user.full_name = profile_in.full_name
     if profile_in.profile_picture_base64 is not None:
         current_user.profile_picture_base64 = profile_in.profile_picture_base64
+    if profile_in.skill_level is not None:
+        current_user.skill_level = profile_in.skill_level
         
     session.add(current_user)
     session.commit()
