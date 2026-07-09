@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Star, GripVertical, Lightbulb } from 'lucide-react'
+import { Star, Lightbulb, Loader2 } from 'lucide-react'
 import useChatStore from '../store/useChatStore'
 import './RetoDiario.css'
 
@@ -9,12 +9,152 @@ export default function RetoDiario() {
   const { user } = useChatStore()
   const nivel = user?.skill_level || 'Principiante'
 
-  // Para el mock de las 3 preguntas
-  const [step, setStep] = useState(1)
+  const [challenge, setChallenge] = useState(null)
+  const [loading, setLoading] = useState(true)
+  
+  // Progress state
+  const [step, setStep] = useState(0)
+  const [answers, setAnswers] = useState({}) // stepIndex -> answer
+  
+  // Results state
+  const [showResults, setShowResults] = useState(false)
+  const [score, setScore] = useState(0)
+  
+  useEffect(() => {
+    async function loadChallenge() {
+      try {
+        setLoading(true)
+        const token = localStorage.getItem('access_token')
+        const API_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000'
+        
+        const response = await fetch(`${API_URL}/challenges/daily`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setChallenge(data)
+        }
+      } catch (err) {
+        console.error("Error cargando reto:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadChallenge()
+  }, [])
 
-  // Respuestas (mock)
-  const [q1, setQ1] = useState(3) // 3 = Limitar flujo
-  const [q3, setQ3] = useState(2) // 2 = circuito abierto
+  if (loading) {
+    return (
+      <div className="reto-diario-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', color: '#64748b' }}>
+          <Loader2 size={32} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+          <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+          <h2>Generando tu reto diario con IA...</h2>
+          <p>Adaptando las preguntas para el nivel {nivel}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!challenge) {
+    return (
+      <div className="reto-diario-page">
+        <div className="reto-diario-container">
+          <h2>Error al cargar el reto.</h2>
+          <button className="btn-atras" onClick={() => navigate('/app/retos')}>Volver</button>
+        </div>
+      </div>
+    )
+  }
+
+  const question = challenge.questions[step]
+  const totalQuestions = challenge.questions.length
+
+  const handleNext = () => {
+    if (step < totalQuestions - 1) {
+      setStep(step + 1)
+    } else {
+      // Calculate score and show results
+      let newScore = 0
+      challenge.questions.forEach((q, i) => {
+        const userAns = answers[i]
+        if (q.type === 'multiple_choice') {
+          if (userAns === q.correct_answer) newScore += 1
+        } else if (q.type === 'matching') {
+          // Check if all pairs are matched correctly
+          let allCorrect = true
+          if (!userAns) {
+            allCorrect = false
+          } else {
+            q.pairs.forEach((pair, pairIdx) => {
+              if (userAns[pairIdx] !== pair.term) allCorrect = false
+            })
+          }
+          if (allCorrect) newScore += 1
+        }
+      })
+      setScore(newScore)
+      setShowResults(true)
+    }
+  }
+
+  const handlePrev = () => {
+    if (step > 0) {
+      setStep(step - 1)
+    } else {
+      navigate('/app/retos')
+    }
+  }
+
+  // Answer handlers
+  const handleMcqSelect = (optIndex) => {
+    setAnswers({ ...answers, [step]: optIndex })
+  }
+
+  const handleMatchSelect = (pairIndex, selectedTerm) => {
+    const currentMatches = answers[step] || {}
+    setAnswers({ 
+      ...answers, 
+      [step]: { ...currentMatches, [pairIndex]: selectedTerm }
+    })
+  }
+
+  if (showResults) {
+    const passed = score === totalQuestions
+    return (
+      <div className="reto-diario-page">
+        <div className="reto-diario-container" style={{ textAlign: 'center', padding: '60px 40px' }}>
+          <div style={{ marginBottom: '24px' }}>
+            {passed 
+              ? <Star size={64} color="#f59e0b" fill="#f59e0b" style={{ margin: '0 auto' }} /> 
+              : <Lightbulb size={64} color="#64748b" style={{ margin: '0 auto' }} />
+            }
+          </div>
+          <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '16px' }}>
+            {passed ? '¡Reto Completado!' : '¡Buen intento!'}
+          </h1>
+          <p style={{ fontSize: '18px', color: '#475569', marginBottom: '32px' }}>
+            Obtuviste {score} de {totalQuestions} respuestas correctas.
+          </p>
+          
+          {passed && (
+            <div className="xp-pill" style={{ display: 'inline-block', fontSize: '18px', padding: '8px 24px', marginBottom: '32px' }}>
+              +{challenge.xp_reward} XP
+            </div>
+          )}
+
+          <div>
+            <button className="btn-primary-orange" onClick={() => navigate('/app/retos')}>
+              Volver a Retos
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="reto-diario-page">
@@ -26,18 +166,17 @@ export default function RetoDiario() {
           
           <div className="reto-diario-title-row">
             <div>
-              <h1>Reto diario</h1>
-              <p className="reto-diario-subtitle">Aplica tus conocimientos para resolver problemas reales de electrónica.</p>
+              <h1>{challenge.title}</h1>
+              <p className="reto-diario-subtitle">{challenge.description}</p>
             </div>
             
             <div className="reto-progress-wrapper">
               <div className="reto-progress-labels">
                 <span className="label">PROGRESO</span>
-                <span className="val">Pregunta {step + 7} de 10</span>
+                <span className="val">Pregunta {step + 1} de {totalQuestions}</span>
               </div>
               <div className="reto-progress-bar-bg">
-                {/* Visual mock: 80%, 90%, 100% */}
-                <div className="reto-progress-bar-fill" style={{ width: `${(step + 7) * 10}%` }} />
+                <div className="reto-progress-bar-fill" style={{ width: `${((step + 1) / totalQuestions) * 100}%` }} />
               </div>
             </div>
           </div>
@@ -49,103 +188,72 @@ export default function RetoDiario() {
             <div className="xp-icon-circle">
               <Star size={16} fill="currentColor" />
             </div>
-            <span>XP ganado: <span style={{ color: '#d97706' }}>250</span></span>
+            <span>XP a ganar: <span style={{ color: '#d97706' }}>{challenge.xp_reward}</span></span>
           </div>
           <div className="xp-right">
-            <span>⚑ Solo faltan dos retos.</span>
+            <span>⚑ Reto generado por IA Elektra</span>
           </div>
         </div>
 
-        {/* --- STEP 1: Multiple Choice --- */}
-        {step === 1 && (
+        {/* Question Render */}
+        {question && (
           <div className="question-card">
-            <h3 className="question-title">¿Qué función cumple una resistencia?</h3>
-            <div className="mcq-options">
-              {[
-                'Almacenar energía eléctrica',
-                'Aumentar el voltaje del circuito',
-                'Crear un campo magnético',
-                'Limitar el flujo de corriente'
-              ].map((opt, i) => (
-                <div 
-                  key={i} 
-                  className={`mcq-option ${q1 === i ? 'selected' : ''}`}
-                  onClick={() => setQ1(i)}
-                >
-                  {opt}
-                </div>
-              ))}
-            </div>
-
-            <div className="question-actions">
-              <button className="btn-atras" onClick={() => navigate('/app/retos')}>Atrás</button>
-              <button className="btn-siguiente" onClick={() => setStep(2)}>Siguiente</button>
-            </div>
-          </div>
-        )}
-
-        {/* --- STEP 2: Matching --- */}
-        {step === 2 && (
-          <div className="question-card">
-            <h3 className="question-title" style={{ marginBottom: '4px' }}>Relaciona los conceptos</h3>
-            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>Arrastra el concepto correcto de modo que quede junto a su definición</p>
+            <h3 className="question-title">{question.question}</h3>
             
-            <div className="matching-row">
-              <div className="matching-item"><GripVertical className="drag-handle" size={16} /> Voltaje</div>
-              <div className="matching-item">Diferencia de potencial eléctrico</div>
-            </div>
-            <div className="matching-row">
-              <div className="matching-item"><GripVertical className="drag-handle" size={16} /> Corriente</div>
-              <div className="matching-item">Flujo de electrones a través de un conductor</div>
-            </div>
-            <div className="matching-row">
-              <div className="matching-item"><GripVertical className="drag-handle" size={16} /> Transistor</div>
-              <div className="matching-item">Amplificador de señales eléctricas</div>
-            </div>
-            <div className="matching-row">
-              <div className="matching-item"><GripVertical className="drag-handle" size={16} /> Resistencia</div>
-              <div className="matching-item">Oposición frente a la corriente eléctrica</div>
-            </div>
-
-            <div className="question-actions">
-              <button className="btn-atras" onClick={() => setStep(1)}>Atrás</button>
-              <button className="btn-siguiente" onClick={() => setStep(3)}>Siguiente</button>
-            </div>
-          </div>
-        )}
-
-        {/* --- STEP 3: Image Question --- */}
-        {step === 3 && (
-          <div className="question-card">
-            <div className="image-q-layout">
-              <img src="/protoboard_error.png" alt="Protoboard" className="image-q-img" />
-              
-              <div className="image-q-right">
-                <div className="link-pista"><Lightbulb size={14} /> Ver pista</div>
-                <h3 className="question-title">¿Qué problema presenta el montaje?</h3>
-                
-                <div className="grid-options-2x2">
-                  {[
-                    'El LED está conectado al revés',
-                    'Falta la resistencia de protección',
-                    'El circuito está abierto (cable desconectado).',
-                    'El montaje es correcto'
-                  ].map((opt, i) => (
-                    <div 
-                      key={i} 
-                      className={`mcq-option ${q3 === i ? 'selected' : ''}`}
-                      onClick={() => setQ3(i)}
-                    >
-                      {opt}
-                    </div>
-                  ))}
-                </div>
+            {question.hint && (
+              <div className="link-pista" style={{ justifyContent: 'flex-start', marginBottom: '16px' }}>
+                <Lightbulb size={14} /> Pista: {question.hint}
               </div>
-            </div>
+            )}
 
+            {/* Multiple Choice */}
+            {question.type === 'multiple_choice' && question.options && (
+              <div className="mcq-options">
+                {question.options.map((opt, i) => (
+                  <div 
+                    key={i} 
+                    className={`mcq-option ${answers[step] === i ? 'selected' : ''}`}
+                    onClick={() => handleMcqSelect(i)}
+                  >
+                    {opt}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Matching */}
+            {question.type === 'matching' && question.pairs && (
+              <div>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>Selecciona el concepto correspondiente para cada definición.</p>
+                {question.pairs.map((pair, i) => (
+                  <div key={i} className="matching-row" style={{ marginBottom: '12px', background: '#f8fafc', padding: '16px', borderRadius: '12px' }}>
+                    <div style={{ flex: 1, fontSize: '14px', color: '#334155', fontWeight: '500' }}>
+                      {pair.definition}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <select 
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}
+                        value={(answers[step] && answers[step][i]) || ""}
+                        onChange={(e) => handleMatchSelect(i, e.target.value)}
+                      >
+                        <option value="" disabled>Selecciona un concepto...</option>
+                        {/* Shuffle or just list terms. We'll list them as they are for simplicity, maybe sorted alphabetically to hide correct order */}
+                        {[...question.pairs].sort((a,b) => a.term.localeCompare(b.term)).map((p, termIdx) => (
+                          <option key={termIdx} value={p.term}>{p.term}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Actions */}
             <div className="question-actions">
-              <button className="btn-atras" onClick={() => setStep(2)}>Atrás</button>
-              <button className="btn-siguiente" onClick={() => navigate('/app/retos')}>Finalizar</button>
+              <button className="btn-atras" onClick={handlePrev}>Atrás</button>
+              <button className="btn-siguiente" onClick={handleNext}>
+                {step === totalQuestions - 1 ? 'Finalizar' : 'Siguiente'}
+              </button>
             </div>
           </div>
         )}

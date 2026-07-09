@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 from typing import List, Optional
 import os
@@ -10,6 +12,16 @@ from app.core.database import get_session
 from app.routers.auth import get_current_user
 from app.models.user import User
 from app.models.library import LibraryMaterial
+from app.services.gemini_service import get_ai_service
+from app.schemas.tutorial import ComponentTutorial
+from pydantic import BaseModel
+from typing import List, Dict
+
+class TutorialChatRequest(BaseModel):
+    component_name: str
+    message: str
+    history: List[Dict[str, str]] = []
+
 
 import fitz  # PyMuPDF
 
@@ -161,3 +173,43 @@ def delete_material(
     session.delete(db_material)
     session.commit()
     return None
+
+# 5. Generar un tutorial dinámico con IA para un componente
+@router.get("/tutorial/{component_name}", response_model=ComponentTutorial)
+def get_component_tutorial(
+    component_name: str,
+    current_user: User = Depends(get_current_user)
+):
+    ai_service = get_ai_service()
+    
+    prompt = f"""
+Eres un ingeniero experto en electrónica.
+El usuario necesita un tutorial rápido y amigable sobre el siguiente componente: {component_name}.
+
+Explícalo de forma concisa y amigable, utilizando español neutro.
+
+INSTRUCCIONES:
+1. 'summary': Una definición breve y simple (1-2 oraciones).
+2. 'how_it_works': Explica el principio básico de funcionamiento.
+3. 'common_uses': Da 3 ejemplos de aplicaciones muy comunes.
+4. 'connection_tips': Da 2 consejos clave al conectarlo en la protoboard o el circuito (ej. polaridad, uso de resistencias, pines típicos).
+
+IMPORTANTE: Responde SOLO con el JSON válido siguiendo el esquema proporcionado. No agregues markdown adicional fuera del JSON.
+"""
+
+    tutorial = ai_service.structured_completion(prompt, ComponentTutorial)
+    return tutorial
+
+# 6. Chat para preguntas de seguimiento en el tutorial
+@router.post("/tutorial-chat")
+def tutorial_chat(
+    req: TutorialChatRequest,
+    current_user: User = Depends(get_current_user)
+):
+    ai_service = get_ai_service()
+    system_instruction = f"Eres un asistente de electrónica que está ayudando a un estudiante a entender el componente '{req.component_name}'. Responde de manera concisa y clara a sus dudas."
+    
+    messages = req.history + [{"role": "user", "content": req.message}]
+    
+    response_text = ai_service.chat_completion(system_instruction, messages)
+    return {"reply": response_text}
