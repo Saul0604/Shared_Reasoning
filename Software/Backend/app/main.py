@@ -31,6 +31,7 @@ app.add_middleware(
 
 from app.routers import share
 from app.routers import library
+from app.routers import challenges
 
 app.include_router(health.router)
 app.include_router(extract.router)
@@ -39,6 +40,7 @@ app.include_router(chat.router)
 app.include_router(auth.router)
 app.include_router(share.router)
 app.include_router(library.router)
+app.include_router(challenges.router, prefix="/challenges", tags=["challenges"])
 
 from app.core.config import settings
 
