@@ -8,6 +8,7 @@ class UserBase(SQLModel):
     email: str = Field(unique=True, index=True)
     full_name: Optional[str] = None
     is_active: bool = Field(default=True)
+    skill_level: Optional[str] = Field(default="Principiante")  # "Principiante" | "Intermedio" | "Avanzado"
     profile_picture_base64: Optional[str] = Field(default=None, sa_column=Column(LONGTEXT))
 
 # Modelo que se guarda en la base de datos (contiene la contraseña hasheada)

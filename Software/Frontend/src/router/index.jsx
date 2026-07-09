@@ -12,6 +12,7 @@ import Settings from '../pages/Settings'
 import Profile from '../pages/Profile'
 import Help from '../pages/Help'
 import ShareResolver from '../pages/ShareResolver'
+import RetoDiario from '../pages/RetoDiario'
 
 // Guardián para proteger rutas privadas
 function ProtectedRoute() {
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
           { path: 'library', element: <Library /> },
           { path: 'components', element: <Components /> },
           { path: 'retos', element: <Retos /> },
+          { path: 'retos/diario', element: <RetoDiario /> },
           { path: 'classes', element: <Classes /> },
           { path: 'settings', element: <Settings /> },
           { path: 'profile', element: <Profile /> },

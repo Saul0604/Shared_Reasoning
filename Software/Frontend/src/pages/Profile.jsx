@@ -198,6 +198,34 @@ export default function Profile() {
                 }}
               />
             </div>
+
+            {/* Skill Level Display */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>Nivel de Experiencia</label>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: '1px solid #e2e8f0',
+                background: '#f8fafc',
+                fontSize: '13px',
+                fontWeight: '600'
+              }}>
+                <span style={{
+                  padding: '4px 12px',
+                  borderRadius: '9999px',
+                  background: user?.skill_level === 'Avanzado' ? '#dbeafe' : user?.skill_level === 'Intermedio' ? '#fef3c7' : '#dcfce7',
+                  color: user?.skill_level === 'Avanzado' ? '#2563eb' : user?.skill_level === 'Intermedio' ? '#d97706' : '#16a34a',
+                }}>
+                  {user?.skill_level || 'Principiante'}
+                </span>
+                <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '500' }}>
+                  (Evaluado en la encuesta inicial)
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Botones de acción */}
