@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Star, Lightbulb, Loader2 } from 'lucide-react'
 import useChatStore from '../store/useChatStore'
+import { useTranslation } from '../utils/i18n'
 import './RetoDiario.css'
 
 export default function RetoDiario() {
   const navigate = useNavigate()
   const { user } = useChatStore()
+  const { lang } = useTranslation()
   const nivel = user?.skill_level || 'Principiante'
 
   const [challenge, setChallenge] = useState(null)
@@ -27,7 +29,7 @@ export default function RetoDiario() {
         const token = localStorage.getItem('access_token')
         const API_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000'
         
-        const response = await fetch(`${API_URL}/challenges/daily`, {
+        const response = await fetch(`${API_URL}/challenges/daily?lang=${lang}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -44,16 +46,22 @@ export default function RetoDiario() {
       }
     }
     loadChallenge()
-  }, [])
+  }, [lang])
 
   if (loading) {
+    const displayLevel = nivel.toLowerCase() === 'principiante' 
+      ? (lang === 'es' ? 'principiante' : 'beginner') 
+      : nivel.toLowerCase() === 'intermedio'
+      ? (lang === 'es' ? 'intermedio' : 'intermediate')
+      : (lang === 'es' ? 'avanzado' : 'advanced');
+
     return (
       <div className="reto-diario-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', color: '#64748b' }}>
           <Loader2 size={32} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
           <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
-          <h2>Generando tu reto diario con IA...</h2>
-          <p>Adaptando las preguntas para el nivel {nivel}</p>
+          <h2>{lang === 'es' ? 'Generando tu reto diario con IA...' : 'Generating your daily challenge with AI...'}</h2>
+          <p>{lang === 'es' ? `Adaptando las preguntas para el nivel ${displayLevel}` : `Adapting questions for level: ${displayLevel}`}</p>
         </div>
       </div>
     )
@@ -63,8 +71,10 @@ export default function RetoDiario() {
     return (
       <div className="reto-diario-page">
         <div className="reto-diario-container">
-          <h2>Error al cargar el reto.</h2>
-          <button className="btn-atras" onClick={() => navigate('/app/retos')}>Volver</button>
+          <h2>{lang === 'es' ? 'Error al cargar el reto.' : 'Error loading the challenge.'}</h2>
+          <button className="btn-atras" onClick={() => navigate('/app/retos')}>
+            {lang === 'es' ? 'Volver' : 'Back'}
+          </button>
         </div>
       </div>
     )
@@ -134,10 +144,14 @@ export default function RetoDiario() {
             }
           </div>
           <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '16px' }}>
-            {passed ? '¡Reto Completado!' : '¡Buen intento!'}
+            {passed 
+              ? (lang === 'es' ? '¡Reto Completado!' : 'Challenge Completed!') 
+              : (lang === 'es' ? '¡Buen intento!' : 'Good attempt!')}
           </h1>
           <p style={{ fontSize: '18px', color: '#475569', marginBottom: '32px' }}>
-            Obtuviste {score} de {totalQuestions} respuestas correctas.
+            {lang === 'es' 
+              ? `Obtuviste ${score} de ${totalQuestions} respuestas correctas.` 
+              : `You got ${score} out of ${totalQuestions} correct answers.`}
           </p>
           
           {passed && (
@@ -148,7 +162,7 @@ export default function RetoDiario() {
 
           <div>
             <button className="btn-primary-orange" onClick={() => navigate('/app/retos')}>
-              Volver a Retos
+              {lang === 'es' ? 'Volver a Retos' : 'Back to Challenges'}
             </button>
           </div>
         </div>
@@ -156,13 +170,21 @@ export default function RetoDiario() {
     )
   }
 
+  const displayLevel = nivel.toLowerCase() === 'principiante' 
+    ? (lang === 'es' ? 'principiante' : 'beginner') 
+    : nivel.toLowerCase() === 'intermedio'
+    ? (lang === 'es' ? 'intermedio' : 'intermediate')
+    : (lang === 'es' ? 'avanzado' : 'advanced');
+
   return (
     <div className="reto-diario-page">
       <div className="reto-diario-container">
         
         {/* Header Section */}
         <div className="reto-diario-header">
-          <span className="pill-nivel">Nivel {nivel.toLowerCase()}</span>
+          <span className="pill-nivel">
+            {lang === 'es' ? `Nivel ${displayLevel}` : `Level: ${displayLevel}`}
+          </span>
           
           <div className="reto-diario-title-row">
             <div>
@@ -172,8 +194,12 @@ export default function RetoDiario() {
             
             <div className="reto-progress-wrapper">
               <div className="reto-progress-labels">
-                <span className="label">PROGRESO</span>
-                <span className="val">Pregunta {step + 1} de {totalQuestions}</span>
+                <span className="label">{lang === 'es' ? 'PROGRESO' : 'PROGRESS'}</span>
+                <span className="val">
+                  {lang === 'es' 
+                    ? `Pregunta ${step + 1} de ${totalQuestions}` 
+                    : `Question ${step + 1} of ${totalQuestions}`}
+                </span>
               </div>
               <div className="reto-progress-bar-bg">
                 <div className="reto-progress-bar-fill" style={{ width: `${((step + 1) / totalQuestions) * 100}%` }} />
@@ -188,10 +214,12 @@ export default function RetoDiario() {
             <div className="xp-icon-circle">
               <Star size={16} fill="currentColor" />
             </div>
-            <span>XP a ganar: <span style={{ color: '#d97706' }}>{challenge.xp_reward}</span></span>
+            <span>
+              {lang === 'es' ? 'XP a ganar:' : 'XP to earn:'} <span style={{ color: '#d97706' }}>{challenge.xp_reward}</span>
+            </span>
           </div>
           <div className="xp-right">
-            <span>⚑ Reto generado por IA Elektra</span>
+            <span>{lang === 'es' ? '⚑ Reto generado por IA Elektra' : '⚑ Challenge generated by Elektra AI'}</span>
           </div>
         </div>
 
@@ -202,7 +230,7 @@ export default function RetoDiario() {
             
             {question.hint && (
               <div className="link-pista" style={{ justifyContent: 'flex-start', marginBottom: '16px' }}>
-                <Lightbulb size={14} /> Pista: {question.hint}
+                <Lightbulb size={14} /> {lang === 'es' ? 'Pista:' : 'Hint:'} {question.hint}
               </div>
             )}
 
@@ -224,20 +252,23 @@ export default function RetoDiario() {
             {/* Matching */}
             {question.type === 'matching' && question.pairs && (
               <div>
-                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>Selecciona el concepto correspondiente para cada definición.</p>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+                  {lang === 'es' 
+                    ? 'Selecciona el concepto correspondiente para cada definición.' 
+                    : 'Select the corresponding concept for each definition.'}
+                </p>
                 {question.pairs.map((pair, i) => (
-                  <div key={i} className="matching-row" style={{ marginBottom: '12px', background: '#f8fafc', padding: '16px', borderRadius: '12px' }}>
-                    <div style={{ flex: 1, fontSize: '14px', color: '#334155', fontWeight: '500' }}>
+                  <div key={i} className="matching-row" style={{ marginBottom: '12px', background: 'var(--matching-bg, #f8fafc)', padding: '16px', borderRadius: '12px' }}>
+                    <div style={{ flex: 1, fontSize: '14px', color: 'var(--matching-text, #334155)', fontWeight: '500' }}>
                       {pair.definition}
                     </div>
                     <div style={{ flex: 1 }}>
                       <select 
-                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', background: 'var(--matching-select-bg, #ffffff)', color: 'var(--matching-select-text, #334155)' }}
                         value={(answers[step] && answers[step][i]) || ""}
                         onChange={(e) => handleMatchSelect(i, e.target.value)}
                       >
-                        <option value="" disabled>Selecciona un concepto...</option>
-                        {/* Shuffle or just list terms. We'll list them as they are for simplicity, maybe sorted alphabetically to hide correct order */}
+                        <option value="" disabled>{lang === 'es' ? 'Selecciona un concepto...' : 'Select a concept...'}</option>
                         {[...question.pairs].sort((a,b) => a.term.localeCompare(b.term)).map((p, termIdx) => (
                           <option key={termIdx} value={p.term}>{p.term}</option>
                         ))}
@@ -250,9 +281,13 @@ export default function RetoDiario() {
 
             {/* Actions */}
             <div className="question-actions">
-              <button className="btn-atras" onClick={handlePrev}>Atrás</button>
+              <button className="btn-atras" onClick={handlePrev}>
+                {lang === 'es' ? 'Atrás' : 'Back'}
+              </button>
               <button className="btn-siguiente" onClick={handleNext}>
-                {step === totalQuestions - 1 ? 'Finalizar' : 'Siguiente'}
+                {step === totalQuestions - 1 
+                  ? (lang === 'es' ? 'Finalizar' : 'Finish') 
+                  : (lang === 'es' ? 'Siguiente' : 'Next')}
               </button>
             </div>
           </div>

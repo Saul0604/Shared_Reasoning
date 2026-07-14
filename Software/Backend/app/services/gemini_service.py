@@ -5,6 +5,11 @@ Soporta Gemini, OpenAI y modelos locales (Ollama/LM Studio).
 """
 import base64
 import json
+import contextvars
+
+# Request-scoped custom API keys for users
+user_gemini_key_var = contextvars.ContextVar("user_gemini_key", default=None)
+user_openai_key_var = contextvars.ContextVar("user_openai_key", default=None)
 
 from app.core.config import settings
 from app.schemas.project import Project
@@ -103,12 +108,13 @@ VERIFY_STEP_PROMPT_TEMPLATE = (
 class GeminiProvider:
     """Usa la API nativa de Google Gemini (google-genai)."""
 
-    def __init__(self):
+    def __init__(self, api_key: str = None):
         from google import genai
         from google.genai import types
         self._genai = genai
         self._types = types
-        self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        key = api_key or settings.GEMINI_API_KEY
+        self.client = genai.Client(api_key=key)
         self.model_name = "gemini-2.5-flash"
 
     def extract_project_from_image(self, base64_image: str) -> Project:
@@ -244,9 +250,10 @@ class GeminiProvider:
 class OpenAIProvider:
     """Usa la API de OpenAI (requiere openai pip package)."""
 
-    def __init__(self):
+    def __init__(self, api_key: str = None):
         from openai import OpenAI
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        key = api_key or settings.OPENAI_API_KEY
+        self.client = OpenAI(api_key=key)
         self.model_name = "gpt-4o"
 
     def _image_content(self, base64_image: str):
@@ -435,12 +442,31 @@ _provider_cache: dict = {}
 def get_ai_service(provider: str = None):
     """
     Retorna la instancia del proveedor de IA solicitado.
-    Cachea las instancias para no recrear clientes en cada request.
+    Cachea las instancias para no recrear clientes en cada request (excepto cuando hay keys del usuario).
     """
     if provider is None:
         provider = settings.MODEL_PROVIDER or "gemini"
 
     provider = provider.lower().strip()
+
+    # Read from contextvars for user-provided custom API keys
+    user_gemini_key = user_gemini_key_var.get()
+    user_openai_key = user_openai_key_var.get()
+
+    print("==================================================")
+    print(f"[AI Service API Keys Check] Provider: {provider}")
+    print(f"  - Default Gemini Key: {settings.GEMINI_API_KEY}")
+    print(f"  - Default OpenAI Key: {settings.OPENAI_API_KEY}")
+    print(f"  - User Gemini Key:    {user_gemini_key}")
+    print(f"  - User OpenAI Key:    {user_openai_key}")
+    print("==================================================")
+
+    if provider == "gemini" and user_gemini_key:
+        print("[AI Service] Usando API key de Gemini proporcionada por el usuario")
+        return GeminiProvider(api_key=user_gemini_key)
+    elif provider == "openai" and user_openai_key:
+        print("[AI Service] Usando API key de OpenAI proporcionada por el usuario")
+        return OpenAIProvider(api_key=user_openai_key)
 
     if provider in _provider_cache:
         return _provider_cache[provider]

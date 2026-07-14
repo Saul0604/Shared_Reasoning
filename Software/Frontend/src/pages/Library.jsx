@@ -4,10 +4,12 @@ import MaterialCard from '../components/library/MaterialCard';
 import UploadMaterialModal from '../components/library/UploadMaterialModal';
 import PdfViewerModal from '../components/library/PdfViewerModal';
 import useLibraryStore from '../store/useLibraryStore';
+import { useTranslation } from '../utils/i18n';
 import './Library.css';
 
 export default function Library() {
   const { materials, fetchMaterials, isLoading } = useLibraryStore();
+  const { t } = useTranslation();
   
   const [activeTab, setActiveTab] = useState('Todos'); // 'Todos', 'Libros', 'PDFs', 'Guías', 'Datasheets'
   const [activeFilter, setActiveFilter] = useState('Todos'); // 'Todos', 'Principiante', 'Intermedio', 'Avanzado'
@@ -32,12 +34,27 @@ export default function Library() {
     );
   }, [materials, searchQuery]);
 
+  const tabLabels = {
+    Todos: t('libTabTodo'),
+    Libros: t('libTabLibros'),
+    PDFs: t('libTabPdfs'),
+    Guías: t('libTabGuias'),
+    Datasheets: t('libTabDatasheets')
+  };
+
+  const filterLabels = {
+    Todos: t('libAll'),
+    Principiante: t('libBeginner'),
+    Intermedio: t('libIntermediate'),
+    Avanzado: t('libAdvanced')
+  };
+
   return (
     <div className="library-page">
       {/* Top Header */}
       <div className="library-header">
         <div className="library-header__left">
-          <h1 className="library-title">Librería</h1>
+          <h1 className="library-title">{t('libTitle')}</h1>
           <div className="library-tabs">
             {['Todos', 'Libros', 'PDFs', 'Guías', 'Datasheets'].map(tab => (
               <button 
@@ -45,7 +62,7 @@ export default function Library() {
                 className={`library-tab ${activeTab === tab ? 'active' : ''}`}
                 onClick={() => setActiveTab(tab)}
               >
-                {tab === 'Todos' ? 'Todo' : tab}
+                {tabLabels[tab]}
               </button>
             ))}
           </div>
@@ -53,13 +70,13 @@ export default function Library() {
         
         <div className="library-header__right">
           <button className="btn-upload" onClick={() => setShowUploadModal(true)}>
-            <Plus size={16} /> Subir Material
+            <Plus size={16} /> {t('libUploadBtn')}
           </button>
           <div className="library-search">
             <Search size={16} className="library-search-icon" />
             <input 
               type="text" 
-              placeholder="Buscar material..." 
+              placeholder={t('libSearchPlaceholder')} 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -75,7 +92,7 @@ export default function Library() {
             className={`library-chip ${activeFilter === filter ? 'active' : ''}`}
             onClick={() => setActiveFilter(filter)}
           >
-            {filter}
+            {filterLabels[filter]}
           </button>
         ))}
       </div>
@@ -83,7 +100,7 @@ export default function Library() {
       {/* Grid */}
       {isLoading ? (
         <div style={{textAlign: 'center', marginTop: '40px', color: '#6B7280'}}>
-          Cargando materiales...
+          {t('libLoading')}
         </div>
       ) : filteredMaterials.length > 0 ? (
         <div className="material-grid">
@@ -97,7 +114,7 @@ export default function Library() {
         </div>
       ) : (
         <div style={{textAlign: 'center', marginTop: '40px', color: '#6B7280'}}>
-          No se encontraron materiales.
+          {t('libEmpty')}
         </div>
       )}
 

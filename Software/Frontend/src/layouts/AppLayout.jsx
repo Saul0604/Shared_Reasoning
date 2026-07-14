@@ -17,19 +17,21 @@ import {
   ChevronUp
 } from 'lucide-react'
 import './AppLayout.css'
+import { useTranslation } from '../utils/i18n'
 
 const navItems = [
-  { to: '/app/retos', label: 'Retos', icon: <Trophy size={20} /> },
-  { to: '/app/library', label: 'Librería', icon: <BookOpen size={20} /> },
-  { to: '/app/proyectos', label: 'Proyectos', icon: <FolderOpen size={20} /> },
-  { to: '/app/components', label: 'Componentes', icon: <Layers size={20} /> },
-  { to: '/app/classes', label: 'Clases', icon: <GraduationCap size={20} /> },
+  { to: '/app/retos', key: 'navRetos', icon: <Trophy size={20} /> },
+  { to: '/app/library', key: 'navLibreria', icon: <BookOpen size={20} /> },
+  { to: '/app/proyectos', key: 'navProyectos', icon: <FolderOpen size={20} /> },
+  { to: '/app/components', key: 'navComponentes', icon: <Layers size={20} /> },
+  { to: '/app/classes', key: 'navClases', icon: <GraduationCap size={20} /> },
 ]
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const navigate = useNavigate()
+  const { t } = useTranslation()
   
   const { 
     clearChat, 
@@ -38,9 +40,16 @@ export default function AppLayout() {
     loadCurrentUser 
   } = useChatStore()
 
-  // Cargar usuario actual al montar
+  // Cargar usuario y restaurar tema al montar
   useEffect(() => {
     loadCurrentUser()
+    
+    const isDark = localStorage.getItem('dark_mode') === 'true'
+    if (isDark) {
+      document.body.classList.add('dark-mode')
+    } else {
+      document.body.classList.remove('dark-mode')
+    }
   }, [])
 
   const handleLogout = () => {
@@ -51,22 +60,17 @@ export default function AppLayout() {
   // Generar iniciales del avatar si no hay foto
   const getInitials = (name) => {
     if (!name) return 'U'
-    const parts = name.trim().split(' ')
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-    }
-    return parts[0][0].toUpperCase()
+    const parts = name.split(' ')
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+    return name.slice(0, 2).toUpperCase()
   }
 
-  const avatarSrc = user?.profile_picture_base64
-    ? (user.profile_picture_base64.startsWith('data:') ? user.profile_picture_base64 : `data:image/jpeg;base64,${user.profile_picture_base64}`)
-    : null
+  const avatarSrc = user?.avatar_url || user?.avatar_base64
 
   return (
     <div className="app-layout">
-      {/* Sidebar */}
+      {/* Sidebar lateral */}
       <aside className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''}`}>
-        {/* Header: Logo + Collapse toggle */}
         <div className="sidebar__header">
           <button
             className="sidebar__logo"
@@ -94,36 +98,39 @@ export default function AppLayout() {
         {/* New Chat */}
         <button
           className="sidebar__new-chat"
-          title={collapsed ? 'New Chat' : ''}
+          title={collapsed ? t('chatNewChat') : ''}
           onClick={() => {
             clearChat()
             navigate('/app/new-chat')
           }}
         >
           <span className="sidebar__new-chat-icon"><Plus size={18} /></span>
-          <span className="sidebar__new-chat-text">New Chat</span>
+          <span className="sidebar__new-chat-text">{t('chatNewChat')}</span>
         </button>
 
         {/* Nav items */}
         <nav className="sidebar__nav">
-          {navItems.map(({ to, label, icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              title={collapsed ? label : ''}
-              className={({ isActive }) =>
-                `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`
-              }
-              onClick={() => {
-                if (to === '/app/proyectos') {
-                  goBackToHistory()
+          {navItems.map(({ to, key, icon }) => {
+            const label = t(key)
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                title={collapsed ? label : ''}
+                className={({ isActive }) =>
+                  `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`
                 }
-              }}
-            >
-              <span className="sidebar__link-icon">{icon}</span>
-              <span className="sidebar__link-text">{label}</span>
-            </NavLink>
-          ))}
+                onClick={() => {
+                  if (to === '/app/proyectos') {
+                    goBackToHistory()
+                  }
+                }}
+              >
+                <span className="sidebar__link-icon">{icon}</span>
+                <span className="sidebar__link-text">{label}</span>
+              </NavLink>
+            )
+          })}
         </nav>
 
         {/* Bottom User Area */}
@@ -133,20 +140,20 @@ export default function AppLayout() {
             <div className="sidebar__user-popover">
               <button onClick={() => { navigate('/app/settings'); setShowUserMenu(false) }}>
                 <Settings size={16} />
-                <span>Configuraciones</span>
+                <span>{t('userConfig')}</span>
               </button>
               <button onClick={() => { navigate('/app/profile'); setShowUserMenu(false) }}>
                 <User size={16} />
-                <span>Mi Perfil</span>
+                <span>{t('userPerfil')}</span>
               </button>
               <button onClick={() => { navigate('/app/help'); setShowUserMenu(false) }}>
                 <HelpCircle size={16} />
-                <span>Ayuda</span>
+                <span>{t('userAyuda')}</span>
               </button>
               <div className="popover-divider"></div>
               <button className="popover-logout" onClick={handleLogout}>
                 <LogOut size={16} />
-                <span>Cerrar sesión</span>
+                <span>{t('userLogout')}</span>
               </button>
             </div>
           )}
