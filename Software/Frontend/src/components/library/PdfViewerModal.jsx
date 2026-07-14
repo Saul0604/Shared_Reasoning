@@ -19,9 +19,9 @@ export default function PdfViewerModal({ material, onClose }) {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         if (!res.ok) throw new Error('No se pudo cargar el PDF');
-        
+
         const blob = await res.blob();
         url = URL.createObjectURL(blob);
         setBlobUrl(url);
@@ -46,11 +46,11 @@ export default function PdfViewerModal({ material, onClose }) {
   return (
     <div className="modal-overlay" style={{ zIndex: 9999 }}>
       <div className="modal-content" style={{ width: '90vw', height: '90vh', maxWidth: '1200px', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
-        
+
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid #E5E7EB', background: '#F9FAFB' }}>
           <h3 style={{ margin: 0, fontSize: '18px', color: '#111827', fontWeight: 600 }}>{material.title}</h3>
-          
+
           <div style={{ display: 'flex', gap: '12px' }}>
             <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={handleDownload} title="Descargar">
               <Download size={16} /> Descargar
@@ -74,8 +74,8 @@ export default function PdfViewerModal({ material, onClose }) {
             </div>
           )}
           {blobUrl && (
-            <iframe 
-              src={`${blobUrl}#toolbar=0`} 
+            <iframe
+              src={`${blobUrl}#toolbar=0`}
               title={material.title}
               style={{ width: '100%', height: '100%', border: 'none' }}
             />

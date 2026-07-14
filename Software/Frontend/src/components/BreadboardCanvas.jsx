@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
-import { Stage, Layer, Rect, Circle, Line, Text, Group, Arc } from 'react-konva'
+import { Stage, Layer, Rect, Circle, Line, Text, Group, Arc, Path } from 'react-konva'
 import './BreadboardCanvas.css'
 
 // ── CONSTANTS ──
@@ -118,33 +118,33 @@ function getTheme(type) {
 function BoardBackground() {
   return (
     <Group>
-      {/* Shadow rect */}
+      {/* Light modern drop shadow */}
       <Rect
         x={14} y={14}
         width={BOARD_WIDTH - 28} height={BOARD_HEIGHT - 28}
-        fill="#e8e0d4"
-        cornerRadius={14}
-        shadowColor="rgba(0,0,0,0.25)"
-        shadowBlur={24}
-        shadowOffsetY={8}
+        fill="#f1f5f9"
+        cornerRadius={12}
+        shadowColor="rgba(0,0,0,0.05)"
+        shadowBlur={16}
+        shadowOffsetY={6}
       />
-      {/* Main board */}
+      {/* Main board body (pure crisp white) */}
       <Rect
         x={12} y={12}
         width={BOARD_WIDTH - 24} height={BOARD_HEIGHT - 24}
-        fill="#f7f2ea"
-        cornerRadius={14}
-        stroke="#ddd5c8"
+        fill="#ffffff"
+        cornerRadius={12}
+        stroke="#e2e8f0"
         strokeWidth={1.5}
       />
-      {/* Channel groove */}
+      {/* Central horizontal divider groove */}
       <Rect
         x={BOARD_PADDING_X - 24}
-        y={(getRowY('e') + getRowY('f')) / 2 - 6}
+        y={(getRowY('e') + getRowY('f')) / 2 - 3}
         width={NUM_COLS * HOLE_SPACING + 48}
-        height={12}
-        fill="#ebe4d8"
-        cornerRadius={6}
+        height={6}
+        fill="#e2e8f0"
+        cornerRadius={1}
       />
     </Group>
   )
@@ -160,15 +160,13 @@ function PowerRail({ yPlus, yMinus }) {
 
   return (
     <Group>
-      {/* + rail background stripe */}
-      <Rect x={xStart - 4} y={yPlus - 8} width={xEnd - xStart + 8} height={16} fill="#fef2f2" cornerRadius={4} />
-      <Line points={[xStart, yPlus, xEnd, yPlus]} stroke="#fca5a5" strokeWidth={1.5} dash={[8, 4]} />
-      <Text x={xStart - 22} y={yPlus - 7} text="+" fontSize={16} fontStyle="bold" fill="#ef4444" />
+      {/* Continuous solid red line for positive rail */}
+      <Line points={[xStart, yPlus, xEnd, yPlus]} stroke="#ef4444" strokeWidth={1.5} />
+      <Text x={xStart - 20} y={yPlus - 8} text="+" fontSize={15} fontStyle="bold" fill="#ef4444" />
 
-      {/* − rail background stripe */}
-      <Rect x={xStart - 4} y={yMinus - 8} width={xEnd - xStart + 8} height={16} fill="#eff6ff" cornerRadius={4} />
-      <Line points={[xStart, yMinus, xEnd, yMinus]} stroke="#93c5fd" strokeWidth={1.5} dash={[8, 4]} />
-      <Text x={xStart - 22} y={yMinus - 7} text="−" fontSize={16} fontStyle="bold" fill="#3b82f6" />
+      {/* Continuous solid blue line for negative rail */}
+      <Line points={[xStart, yMinus, xEnd, yMinus]} stroke="#3b82f6" strokeWidth={1.5} />
+      <Text x={xStart - 20} y={yMinus - 8} text="−" fontSize={15} fontStyle="bold" fill="#3b82f6" />
     </Group>
   )
 }
@@ -181,19 +179,20 @@ function HoleGrid() {
   const holes = []
   const labels = []
 
-  // Main rows
+  // Main row labels (a-j)
   for (const row of [...TOP_ROWS, ...BOTTOM_ROWS]) {
     const y = getRowY(row)
     labels.push(
-      <Text key={`lbl-${row}`} x={BOARD_PADDING_X - 36} y={y - 6} text={row} fontSize={12} fontStyle="600" fill="#9ca3af" />
+      <Text key={`lbl-${row}`} x={BOARD_PADDING_X - 36} y={y - 6} text={row.toUpperCase()} fontSize={12} fontStyle="bold" fill="#475569" />
     )
     labels.push(
-      <Text key={`lbl-${row}-r`} x={BOARD_PADDING_X + NUM_COLS * HOLE_SPACING + 4} y={y - 6} text={row} fontSize={12} fontStyle="600" fill="#9ca3af" />
+      <Text key={`lbl-${row}-r`} x={BOARD_PADDING_X + NUM_COLS * HOLE_SPACING + 12} y={y - 6} text={row.toUpperCase()} fontSize={12} fontStyle="bold" fill="#475569" />
     )
+    // Sockets for holes (dark inside, light grey border)
     for (let col = 1; col <= NUM_COLS; col++) {
       holes.push(
-        <Circle key={`h-${row}-${col}`} x={getColX(col)} y={y} radius={HOLE_RADIUS}
-          fill="#d4d0c8" stroke="#c5c0b5" strokeWidth={0.5} />
+        <Circle key={`h-${row}-${col}`} x={getColX(col)} y={y} radius={3.2}
+          fill="#374151" stroke="#e2e8f0" strokeWidth={0.8} />
       )
     }
   }
@@ -202,21 +201,20 @@ function HoleGrid() {
   for (let col = 1; col <= NUM_COLS; col++) {
     if (col <= 5 || col % 5 === 0) {
       labels.push(
-        <Text key={`col-${col}`} x={getColX(col) - (col >= 10 ? 5 : 3)} y={getRowY('a') - 22}
-          text={String(col)} fontSize={10} fill="#b0aaa0" fontStyle="600" />
+        <Text key={`col-${col}`} x={getColX(col) - (col >= 10 ? 6 : 3)} y={getRowY('a') - 22}
+          text={String(col)} fontSize={10} fill="#475569" fontStyle="bold" />
       )
     }
   }
 
-  // Power rail holes
+  // Power rail holes (same dark socket visual style)
   for (const ctx of ['top', 'bottom']) {
     for (const rail of ['+', '-']) {
       const y = getRowY(rail, ctx)
       for (let col = 1; col <= NUM_COLS; col++) {
-        const isPlus = rail === '+'
         holes.push(
-          <Circle key={`rail-${ctx}-${rail}-${col}`} x={getColX(col)} y={y} radius={HOLE_RADIUS - 0.5}
-            fill={isPlus ? '#fecaca' : '#bfdbfe'} stroke={isPlus ? '#f87171' : '#60a5fa'} strokeWidth={0.4} />
+          <Circle key={`rail-${ctx}-${rail}-${col}`} x={getColX(col)} y={y} radius={3.2}
+            fill="#374151" stroke="#e2e8f0" strokeWidth={0.8} />
         )
       }
     }
@@ -260,18 +258,22 @@ function ComponentShape({ component, isHighlighted, onHover, onLeave }) {
   // Decide which shape to render
   let shape
   if (typeLower === 'led') {
-    shape = <LedBody cx={cx} cy={cy} w={bodyW} h={bodyH} value={component.value} isHighlighted={isHighlighted} />
+    shape = <LedBody cx={cx} cy={cy} w={bodyW} h={bodyH} value={component.value} isHighlighted={isHighlighted} x1={x1} y1={y1} x2={x2} y2={y2} />
   } else if (typeLower === 'ammeter' || typeLower === 'amperimetro' || typeLower === 'voltmeter' || typeLower === 'voltimetro') {
     const letter = (typeLower === 'ammeter' || typeLower === 'amperimetro') ? 'A' : 'V'
-    shape = <MeterBody cx={cx} cy={cy} letter={letter} theme={theme} isHighlighted={isHighlighted} />
+    shape = <MeterBody cx={cx} cy={cy} letter={letter} theme={theme} isHighlighted={isHighlighted} x1={x1} y1={y1} x2={x2} y2={y2} />
   } else if (typeLower === 'resistor' || typeLower === 'resistencia') {
-    shape = <ResistorBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} isHighlighted={isHighlighted} />
+    shape = <ResistorBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} isHighlighted={isHighlighted} value={component.value} x1={x1} y1={y1} x2={x2} y2={y2} />
   } else if (typeLower === 'battery' || typeLower === 'bateria' || typeLower === 'fuente' || typeLower === 'power_supply') {
-    shape = <BatteryBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} isHighlighted={isHighlighted} />
+    shape = <BatteryBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} isHighlighted={isHighlighted} x1={x1} y1={y1} x2={x2} y2={y2} />
   } else if (typeLower === 'switch' || typeLower === 'interruptor') {
-    shape = <SwitchBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} isHighlighted={isHighlighted} />
+    shape = <SwitchBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} isHighlighted={isHighlighted} x1={x1} y1={y1} x2={x2} y2={y2} />
+  } else if (typeLower === 'capacitor' || typeLower === 'condensador') {
+    shape = <CapacitorBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} isHighlighted={isHighlighted} x1={x1} y1={y1} x2={x2} y2={y2} />
+  } else if (typeLower === 'diode' || typeLower === 'diodo') {
+    shape = <DiodeBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} isHighlighted={isHighlighted} value={component.value} x1={x1} y1={y1} x2={x2} y2={y2} />
   } else {
-    shape = <GenericBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} type={component.type} isHighlighted={isHighlighted} />
+    shape = <GenericBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} type={component.type} isHighlighted={isHighlighted} x1={x1} y1={y1} x2={x2} y2={y2} />
   }
 
   return (
@@ -293,10 +295,6 @@ function ComponentShape({ component, isHighlighted, onHover, onLeave }) {
       <Circle x={x1} y={y1} radius={4.5} fill={theme.border} stroke="#fff" strokeWidth={1.5} />
       <Circle x={x2} y={y2} radius={4.5} fill={theme.border} stroke="#fff" strokeWidth={1.5} />
 
-      {/* Thin lead lines from pin to body edge */}
-      <Line points={[x1, y1, cx - bodyW / 2, cy]} stroke={theme.border} strokeWidth={2} lineCap="round" opacity={0.6} />
-      <Line points={[x2, y2, cx + bodyW / 2, cy]} stroke={theme.border} strokeWidth={2} lineCap="round" opacity={0.6} />
-
       {/* Component body */}
       {shape}
 
@@ -305,7 +303,6 @@ function ComponentShape({ component, isHighlighted, onHover, onLeave }) {
         <Rect
           x={cx - 20} y={cy - bodyH / 2 - 22}
           width={40} height={16}
-          fill="rgba(255,255,255,0.85)" cornerRadius={4}
           stroke={theme.border} strokeWidth={0.8}
         />
         <Text
@@ -329,138 +326,459 @@ function ComponentShape({ component, isHighlighted, onHover, onLeave }) {
   )
 }
 
+// Helper to parse resistor value and return correct 4-band colors (Spanish/English compatible)
+function getResistorBands(valueStr) {
+  const defaultBands = ['#92400e', '#1e1e1e', '#dc2626', '#d97706'] // Brown, Black, Red, Gold (1k)
+  if (!valueStr) return defaultBands
+
+  // Clean value (e.g. "1k", "220 ohms", "10k", "4.7k")
+  let val = valueStr.toLowerCase().replace(/[\sΩohms]/g, '')
+  let multiplier = 1
+  if (val.includes('k')) {
+    multiplier = 1000
+    val = val.replace('k', '')
+  } else if (val.includes('m')) {
+    multiplier = 1000000
+    val = val.replace('m', '')
+  }
+  
+  const num = parseFloat(val) * multiplier
+  if (isNaN(num) || num < 1) return defaultBands
+
+  const strExp = num.toExponential(1)
+  const parts = strExp.split('e')
+  const base = parts[0].replace('.', '')
+  const exp = parseInt(parts[1]) - 1
+  
+  const colorMap = [
+    '#1e1e1e', // 0: Black
+    '#92400e', // 1: Brown
+    '#dc2626', // 2: Red
+    '#f97316', // 3: Orange
+    '#eab308', // 4: Yellow
+    '#22c55e', // 5: Green
+    '#3b82f6', // 6: Blue
+    '#a855f7', // 7: Violet (Purple)
+    '#6b7280', // 8: Grey
+    '#f8fafc'  // 9: White
+  ]
+
+  const d1 = parseInt(base[0])
+  const d2 = parseInt(base[1] || '0')
+  const mult = exp
+
+  const band1 = colorMap[d1] ?? '#92400e'
+  const band2 = colorMap[d2] ?? '#1e1e1e'
+  const band3 = colorMap[mult] ?? '#dc2626'
+  const band4 = '#d97706' // Gold (5% tolerance)
+
+  return [band1, band2, band3, band4]
+}
 
 // ── Resistor Body ──
-function ResistorBody({ cx, cy, w, h, theme, isHighlighted }) {
+function ResistorBody({ cx, cy, w, h, theme, isHighlighted, value, x1, y1, x2, y2 }) {
   const bw = Math.max(w, 54)
-  const bh = Math.max(h, 22)
+  const bh = 14 // flat profile height
+  const bands = getResistorBands(value)
+
   return (
     <Group>
+      {/* Resistor leads (thin metal wires connecting holes to body) */}
+      <Line points={[x1, y1, cx - bw/2, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
+      <Line points={[x2, y2, cx + bw/2, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
+
+      {/* Flat resistor body */}
       <Rect
-        x={cx - bw / 2} y={cy - bh / 2}
-        width={bw} height={bh}
-        fill={theme.bg} stroke={isHighlighted ? '#f59e0b' : theme.border}
-        strokeWidth={isHighlighted ? 2.5 : 1.8} cornerRadius={5}
-        shadowColor="rgba(0,0,0,0.1)" shadowBlur={4} shadowOffsetY={2}
+        x={cx - bw / 2}
+        y={cy - bh / 2}
+        width={bw}
+        height={bh}
+        fill={theme.bg}
+        stroke={isHighlighted ? '#ef4444' : '#bcaaa4'}
+        strokeWidth={isHighlighted ? 2 : 1.2}
+        cornerRadius={3}
       />
-      {/* Color bands */}
-      {[0.2, 0.35, 0.5, 0.65, 0.8].map((pct, i) => (
-        <Rect key={i}
-          x={cx - bw / 2 + bw * pct - 1.5} y={cy - bh / 2 + 3}
-          width={3} height={bh - 6}
-          fill={['#92400e', '#1e1e1e', '#dc2626', '#eab308', '#d97706'][i]}
-          cornerRadius={1}
-        />
-      ))}
+
+      {/* Resistor bands (solid vertical blocks) */}
+      {[0.25, 0.4, 0.55, 0.7].map((pct, i) => {
+        const bandX = cx - bw / 2 + bw * pct
+        return (
+          <Rect
+            key={i}
+            x={bandX - 2}
+            y={cy - bh / 2}
+            width={4}
+            height={bh}
+            fill={bands[i]}
+          />
+        )
+      })}
     </Group>
   )
 }
 
+// ── Diode Body ──
+function DiodeBody({ cx, cy, w, h, theme, isHighlighted, value, x1, y1, x2, y2 }) {
+  const bw = Math.max(w, 50)
+  const bh = 11 // slightly thinner than a resistor
+  
+  const isGlass = (value || '').toLowerCase().includes('4148')
+  const bodyColor = isGlass ? '#ff7043' : '#374151' // Orange glass for 1N4148, dark grey for rectifier
+  const stripeColor = isGlass ? '#212121' : '#b0bec5' // Black stripe for 1N4148, silver stripe for rectifier
+  const borderColor = isGlass ? '#d84315' : '#212121'
+
+  return (
+    <Group>
+      {/* Diode leads */}
+      <Line points={[x1, y1, cx - bw/2, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
+      <Line points={[x2, y2, cx + bw/2, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
+
+      {/* Flat diode body */}
+      <Rect
+        x={cx - bw / 2}
+        y={cy - bh / 2}
+        width={bw}
+        height={bh}
+        fill={bodyColor}
+        stroke={isHighlighted ? '#ef4444' : borderColor}
+        strokeWidth={isHighlighted ? 2 : 1.2}
+        cornerRadius={1.5}
+      />
+
+      {/* Cathode Stripe (on the right end, near negative lead) */}
+      <Rect
+        x={cx + bw / 2 - 6}
+        y={cy - bh / 2}
+        width={2.5}
+        height={bh}
+        fill={stripeColor}
+      />
+    </Group>
+  )
+}
+
+// ── Capacitor Body ──
+function CapacitorBody({ cx, cy, w, h, theme, isHighlighted, x1, y1, x2, y2 }) {
+  const r = 12
+  
+  return (
+    <Group>
+      {/* Metal lead lines from breadboard pins to the capacitor body */}
+      <Line points={[x1, y1, cx, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
+      <Line points={[x2, y2, cx, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
+
+      {/* Flat circular capacitor case (top-down view) */}
+      <Circle
+        x={cx}
+        y={cy}
+        radius={r}
+        fill="#263238" // charcoal body
+        stroke={isHighlighted ? '#ef4444' : '#374151'}
+        strokeWidth={isHighlighted ? 2 : 1.2}
+      />
+
+      {/* Cathode/Negative stripe (crescent arc) */}
+      <Arc
+        x={cx}
+        y={cy}
+        innerRadius={8.5}
+        outerRadius={11.5}
+        angle={120}
+        rotation={300}
+        fill="#cfd8dc" // light grey stripe
+      />
+
+      {/* Minus sign text inside the negative stripe */}
+      <Text
+        x={cx + 5}
+        y={cy - 4}
+        text="-"
+        fontSize={10}
+        fontStyle="bold"
+        fill="#374151"
+      />
+
+      {/* Vent notches (cross in the center) */}
+      <Line points={[cx - 3, cy, cx + 3, cy]} stroke="#455a64" strokeWidth={1} />
+      <Line points={[cx, cy - 3, cx, cy + 3]} stroke="#455a64" strokeWidth={1} />
+    </Group>
+  )
+}
 
 // ── Battery Body ──
-function BatteryBody({ cx, cy, w, h, theme, isHighlighted }) {
-  const bw = Math.max(w, 48)
-  const bh = Math.max(h, 30)
+function BatteryBody({ cx, cy, w, h, theme, isHighlighted, x1, y1, x2, y2 }) {
+  const bw = Math.max(w, 54)
+  const bh = 30
+  
   return (
     <Group>
+      {/* Wokwi battery wire leads (red for positive, black for negative) */}
+      <Line points={[x1, y1, cx - bw/2, cy - 6]} stroke="#ef4444" strokeWidth={1.5} tension={0.5} lineCap="round" />
+      <Line points={[x2, y2, cx - bw/2, cy + 6]} stroke="#212121" strokeWidth={1.5} tension={0.5} lineCap="round" />
+
+      {/* Battery Body (Flat rectangle) */}
       <Rect
         x={cx - bw / 2} y={cy - bh / 2}
         width={bw} height={bh}
-        fill={theme.bg} stroke={isHighlighted ? '#f59e0b' : theme.border}
-        strokeWidth={isHighlighted ? 2.5 : 1.8} cornerRadius={6}
-        shadowColor="rgba(0,0,0,0.1)" shadowBlur={4} shadowOffsetY={2}
+        fill="#212121"
+        stroke={isHighlighted ? '#ef4444' : '#424242'}
+        strokeWidth={isHighlighted ? 2 : 1.2}
+        cornerRadius={3}
       />
-      {/* + sign on left */}
-      <Text x={cx - bw / 2 + 4} y={cy - 7} text="+" fontSize={14} fontStyle="bold" fill="#ef4444" />
-      {/* Battery cell bars */}
-      <Rect x={cx - 4} y={cy - bh / 2 + 4} width={3} height={bh - 8} fill={theme.border} cornerRadius={1} />
-      <Rect x={cx + 4} y={cy - bh / 2 + 6} width={2} height={bh - 12} fill={theme.border} cornerRadius={1} />
-      {/* − sign on right */}
-      <Text x={cx + bw / 2 - 14} y={cy - 7} text="−" fontSize={14} fontStyle="bold" fill="#3b82f6" />
+
+      {/* Metal terminals collar */}
+      <Rect
+        x={cx - bw / 2}
+        y={cy - bh / 2 + 1}
+        width={5}
+        height={bh - 2}
+        fill="#90a4ae"
+        cornerRadius={[2, 0, 0, 2]}
+      />
+
+      {/* Blue branding/collar stripe */}
+      <Rect
+        x={cx - bw / 2 + 10}
+        y={cy - bh / 2 + 1}
+        width={bw - 20}
+        height={6}
+        fill="#1e88e5"
+      />
+      
+      {/* Labels */}
+      <Text x={cx - 10} y={cy - 4} text="9V" fontSize={9} fontStyle="bold" fill="#ffffff" />
+      
+      <Text x={cx - bw/2 + 8} y={cy - 12} text="+" fontSize={10} fontStyle="bold" fill="#ef4444" />
+      <Text x={cx - bw/2 + 8} y={cy + 2} text="-" fontSize={12} fontStyle="bold" fill="#60a5fa" />
     </Group>
   )
 }
-
 
 // ── LED Body ──
-function LedBody({ cx, cy, w, h, value, isHighlighted }) {
+function LedBody({ cx, cy, w, h, value, isHighlighted, x1, y1, x2, y2 }) {
   const color = getLedColor(value)
-  const r = Math.max(Math.min(w, h) / 2, 16)
+  const r = 14
+  
+  const darkColors = {
+    '#ef4444': '#b91c1c', // Red
+    '#22c55e': '#15803d', // Green
+    '#3b82f6': '#1d4ed8', // Blue
+    '#eab308': '#a16207', // Yellow
+    '#e2e8f0': '#cbd5e1', // White
+    '#f97316': '#c2410c'  // Orange
+  }
+  const darkColor = darkColors[color] ?? '#374151'
+
+  // Wokwi LED outline path (circle with flat edge on the right to represent cathode)
+  const ledPath = `M ${cx + 11} ${cy - 8.6} A ${r} ${r} 0 1 0 ${cx + 11} ${cy + 8.6} Z`
+
   return (
     <Group>
-      {/* Outer glow */}
-      <Circle x={cx} y={cy} radius={r + 8} fill={color} opacity={isHighlighted ? 0.3 : 0.12} />
-      {/* LED body */}
-      <Circle x={cx} y={cy} radius={r}
-        fill={color} stroke={isHighlighted ? '#f59e0b' : '#fff'}
-        strokeWidth={isHighlighted ? 2.5 : 2}
-        shadowColor={color} shadowBlur={isHighlighted ? 24 : 10}
-      />
-      {/* Inner shine */}
-      <Circle x={cx - r * 0.22} y={cy - r * 0.22} radius={r * 0.3}
-        fill="rgba(255,255,255,0.5)" />
-      {/* Triangle arrow indicator */}
+      {/* Wokwi LED lead wires (connecting breadboard holes to anode/cathode) */}
+      <Line points={[x1, y1, cx - 4, cy + r - 2]} stroke="#94a3b8" strokeWidth={1.5} lineCap="round" />
+      <Line points={[x2, y2, cx + 4, cy + r - 2]} stroke="#94a3b8" strokeWidth={1.5} lineCap="round" />
+
+      {/* On glow (when highlighted) */}
+      {isHighlighted && (
+        <Circle
+          x={cx}
+          y={cy}
+          radius={r + 8}
+          fill={color}
+          opacity={0.25}
+        />
+      )}
+
+      {/* Internal Anode/Cathode leads (visible inside translucent LED) */}
+      {/* Left Lead (Anode) */}
       <Line
-        points={[cx - 5, cy - 6, cx + 5, cy, cx - 5, cy + 6]}
-        fill="rgba(255,255,255,0.35)" closed stroke="rgba(255,255,255,0.5)" strokeWidth={0.8}
+        points={[cx - 4, cy + r - 2, cx - 4, cy, cx - 6, cy - 4]}
+        stroke="#cbd5e1"
+        strokeWidth={1.2}
+        lineCap="round"
+      />
+      {/* Right Lead (Cathode Flag) */}
+      <Line
+        points={[cx + 3, cy + r - 2, cx + 3, cy, cx + 1, cy - 5, cx + 5, cy - 5]}
+        stroke="#cbd5e1"
+        strokeWidth={1.2}
+        closed
+        fill="#b8c2cc"
+      />
+
+      {/* Translucent Dome */}
+      <Path
+        data={ledPath}
+        fill={color}
+        opacity={0.75}
+        stroke={darkColor}
+        strokeWidth={1.5}
+      />
+      
+      {/* Base ring lip */}
+      <Circle
+        x={cx}
+        y={cy}
+        radius={r}
+        stroke={darkColor}
+        strokeWidth={0.8}
+        opacity={0.3}
       />
     </Group>
   )
 }
-
 
 // ── Meter Body (Ammeter/Voltmeter) ──
-function MeterBody({ cx, cy, letter, theme, isHighlighted }) {
+function MeterBody({ cx, cy, letter, theme, isHighlighted, x1, y1, x2, y2 }) {
+  const mw = 44
+  const mh = 44
+  const isAmmeter = letter === 'A'
+
   return (
     <Group>
-      <Circle x={cx} y={cy} radius={18}
-        fill={theme.bg} stroke={isHighlighted ? '#f59e0b' : theme.border}
-        strokeWidth={isHighlighted ? 2.5 : 2}
-        shadowColor="rgba(0,0,0,0.1)" shadowBlur={6} shadowOffsetY={2}
+      {/* Multimeter Probes Wires */}
+      <Line points={[x1, y1, cx - 10, cy + mh/2]} stroke="#ef4444" strokeWidth={1.5} tension={0.5} lineCap="round" />
+      <Line points={[x2, y2, cx + 10, cy + mh/2]} stroke="#212121" strokeWidth={1.5} tension={0.5} lineCap="round" />
+
+      {/* Yellow Case (flat color block) */}
+      <Rect
+        x={cx - mw / 2} y={cy - mh / 2}
+        width={mw} height={mh}
+        fill="#fbc02d" // flat yellow
+        stroke={isHighlighted ? '#ef4444' : '#f57f17'}
+        strokeWidth={isHighlighted ? 2 : 1.2}
+        cornerRadius={4}
       />
-      <Text x={cx - 7} y={cy - 8} text={letter} fontSize={16} fontStyle="bold" fill={theme.text} />
+
+      {/* LCD Screen Border */}
+      <Rect
+        x={cx - mw / 2 + 4} y={cy - mh / 2 + 4}
+        width={mw - 8} height={14}
+        fill="#374151"
+        cornerRadius={1}
+      />
+
+      {/* LCD Screen */}
+      <Rect
+        x={cx - mw / 2 + 5} y={cy - mh / 2 + 5}
+        width={mw - 10} height={12}
+        fill="#e0f2f1"
+        cornerRadius={0.5}
+      />
+
+      {/* LCD Value Text */}
+      <Text
+        x={cx - mw / 2 + 5} y={cy - mh / 2 + 7}
+        width={mw - 10}
+        text={isAmmeter ? "0.00 A" : "0.00 V"}
+        fontSize={8}
+        fontFamily="Courier New, monospace"
+        fontStyle="bold"
+        fill="#004d40"
+        align="center"
+      />
+
+      {/* Dial */}
+      <Circle
+        x={cx} y={cy + 12}
+        radius={6}
+        fill="#212121"
+        stroke="#424242"
+        strokeWidth={0.8}
+      />
+      <Line points={[cx, cy + 12, cx - 3, cy + 9]} stroke="#ef5350" strokeWidth={1.2} />
     </Group>
   )
 }
-
 
 // ── Switch Body ──
-function SwitchBody({ cx, cy, w, h, theme, isHighlighted }) {
-  const bw = Math.max(w, 44)
-  return (
-    <Group>
-      <Rect
-        x={cx - bw / 2} y={cy - 10} width={bw} height={20}
-        fill={theme.bg} stroke={isHighlighted ? '#f59e0b' : theme.border}
-        strokeWidth={isHighlighted ? 2.5 : 1.8} cornerRadius={10}
-        shadowColor="rgba(0,0,0,0.1)" shadowBlur={4} shadowOffsetY={2}
-      />
-      {/* Toggle indicator */}
-      <Circle x={cx + 6} y={cy} radius={6} fill={theme.border} />
-      <Line points={[cx - bw / 2 + 6, cy, cx + 6, cy]} stroke={theme.border} strokeWidth={2} lineCap="round" />
-    </Group>
-  )
-}
-
-
-// ── Generic Body ──
-function GenericBody({ cx, cy, w, h, theme, type, isHighlighted }) {
+function SwitchBody({ cx, cy, w, h, theme, isHighlighted, x1, y1, x2, y2 }) {
   const bw = Math.max(w, 48)
-  const bh = Math.max(h, 24)
+  const bh = 18
+  
   return (
     <Group>
+      {/* Switch terminal connection leads */}
+      <Line points={[x1, y1, cx - 12, cy]} stroke="#90a4ae" strokeWidth={1.5} lineCap="round" />
+      <Line points={[x2, y2, cx + 12, cy]} stroke="#90a4ae" strokeWidth={1.5} lineCap="round" />
+
+      {/* Metal casing (flat grey) */}
       <Rect
         x={cx - bw / 2} y={cy - bh / 2}
         width={bw} height={bh}
-        fill={theme.bg} stroke={isHighlighted ? '#f59e0b' : theme.border}
-        strokeWidth={isHighlighted ? 2.5 : 1.8} cornerRadius={6}
-        shadowColor="rgba(0,0,0,0.1)" shadowBlur={4} shadowOffsetY={2}
+        fill="#cfd8dc"
+        stroke={isHighlighted ? '#ef4444' : '#90a4ae'}
+        strokeWidth={isHighlighted ? 2 : 1.2}
+        cornerRadius={2}
       />
+
+      {/* Slider slot */}
+      <Rect
+        x={cx - 10} y={cy - 3}
+        width={20} height={6}
+        fill="#374151"
+        cornerRadius={1}
+      />
+
+      {/* Switch knob */}
+      <Rect
+        x={cx + 2} y={cy - 6}
+        width={6} height={12}
+        fill="#212121"
+        stroke="#111"
+        strokeWidth={0.5}
+        cornerRadius={1}
+      />
+    </Group>
+  )
+}
+
+// ── Generic Body ──
+function GenericBody({ cx, cy, w, h, theme, type, isHighlighted, x1, y1, x2, y2 }) {
+  const bw = Math.max(w, 48)
+  const bh = Math.max(h, 24)
+  
+  return (
+    <Group>
+      {/* Silver pins connecting body to breadboard holes */}
+      <Line points={[x1, y1, cx - bw/2, y1]} stroke="#b0bec5" strokeWidth={2} lineCap="round" />
+      <Line points={[x2, y2, cx + bw/2, y2]} stroke="#b0bec5" strokeWidth={2} lineCap="round" />
+
+      {/* Flat Black IC body */}
+      <Rect
+        x={cx - bw / 2} y={cy - bh / 2}
+        width={bw} height={bh}
+        fill="#212121"
+        stroke={isHighlighted ? '#ef4444' : '#111111'}
+        strokeWidth={isHighlighted ? 2 : 1.2}
+        cornerRadius={1}
+      />
+
+      {/* Pin 1 indicator dot */}
+      <Circle
+        x={cx - bw / 2 + 5} y={cy - bh / 2 + 5}
+        radius={1.2}
+        fill="#374151"
+      />
+
+      {/* Notch */}
+      <Arc
+        x={cx - bw / 2} y={cy}
+        innerRadius={0} outerRadius={3.5}
+        angle={180} rotation={270}
+        fill="#111111"
+      />
+
+      {/* Laser print label */}
       <Text
-        x={cx - bw / 2 + 4} y={cy - 6}
+        x={cx - bw / 2 + 4} y={cy - 4}
         width={bw - 8}
-        text={(type || '?').slice(0, 6)} fontSize={11} fontStyle="bold"
-        fill={theme.text} align="center"
+        text={(type || '?').toUpperCase().slice(0, 8)}
+        fontSize={8.5}
+        fontFamily="Courier New, monospace"
+        fontStyle="bold"
+        fill="#cfd8dc"
+        align="center"
       />
     </Group>
   )

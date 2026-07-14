@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { Search, TriangleAlert, Bot, X, Loader2, Info, Zap, Puzzle, Link2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import { useTranslation } from '../utils/i18n'
 import './Components.css'
 
 export default function Components() {
+  const { t, lang } = useTranslation()
   const [activeFilter, setActiveFilter] = useState('Todos')
   const [searchQuery, setSearchQuery] = useState('')
   
@@ -286,15 +288,30 @@ export default function Components() {
     setTutorialData(null)
   }
 
+  const filterTranslations = {
+    Todos: lang === 'es' ? 'Todos' : 'All',
+    Resistencias: lang === 'es' ? 'Resistencias' : 'Resistors',
+    Capacitores: lang === 'es' ? 'Capacitores' : 'Capacitors',
+    'LEDs & Displays': 'LEDs & Displays',
+    Semiconductores: lang === 'es' ? 'Semiconductores' : 'Semiconductors',
+    Microcontroladores: lang === 'es' ? 'Microcontroladores' : 'Microcontrollers',
+    Sensores: lang === 'es' ? 'Sensores' : 'Sensors',
+    Switches: lang === 'es' ? 'Interruptores' : 'Switches',
+    ICs: 'ICs',
+    Fuentes: lang === 'es' ? 'Fuentes' : 'Power Sources',
+    Cables: lang === 'es' ? 'Cables' : 'Wires',
+    Salidas: lang === 'es' ? 'Salidas' : 'Outputs'
+  }
+
   return (
     <div className="components-page">
       <div className="components-header">
-        <h1>Componentes librería</h1>
+        <h1>{lang === 'es' ? 'Biblioteca de Componentes' : 'Components Library'}</h1>
         <div className="search-container">
           <Search size={16} className="search-icon" />
           <input 
             type="text" 
-            placeholder="Buscar material..." 
+            placeholder={lang === 'es' ? 'Buscar componente...' : 'Search component...'} 
             className="search-input"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -309,7 +326,7 @@ export default function Components() {
             className={`filter-chip ${activeFilter === filter ? 'active' : ''}`}
             onClick={() => setActiveFilter(filter)}
           >
-            {filter}
+            {filterTranslations[filter] || filter}
           </div>
         ))}
       </div>
@@ -341,7 +358,7 @@ export default function Components() {
               className={`comp-btn ${comp.btnStyle}`}
               onClick={() => handleOpenTutorial(comp)}
             >
-              <Bot size={16} /> IA Tutorial
+              <Bot size={16} /> {lang === 'es' ? 'Tutorial IA' : 'AI Tutorial'}
             </button>
 
           </div>
@@ -369,20 +386,20 @@ export default function Components() {
             {isLoadingTutorial ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', color: '#64748b' }}>
                 <Loader2 size={32} className="animate-spin" style={{ animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
-                <p>Generando tutorial con IA Elektra...</p>
+                <p>{lang === 'es' ? 'Generando tutorial con IA Elektra...' : 'Generating tutorial with Elektra AI...'}</p>
               </div>
             ) : tutorialData ? (
               <div className="modal-body">
                 <div className="tutorial-section">
-                  <h3><Info size={16} color="#3b82f6" /> ¿Qué es?</h3>
+                  <h3><Info size={16} color="#3b82f6" /> {lang === 'es' ? '¿Qué es?' : 'What is it?'}</h3>
                   <p>{tutorialData.summary}</p>
                 </div>
                 <div className="tutorial-section">
-                  <h3><Zap size={16} color="#f59e0b" /> ¿Cómo funciona?</h3>
+                  <h3><Zap size={16} color="#f59e0b" /> {lang === 'es' ? '¿Cómo funciona?' : 'How does it work?'}</h3>
                   <p>{tutorialData.how_it_works}</p>
                 </div>
                 <div className="tutorial-section">
-                  <h3><Puzzle size={16} color="#10b981" /> Usos comunes</h3>
+                  <h3><Puzzle size={16} color="#10b981" /> {lang === 'es' ? 'Usos comunes' : 'Common uses'}</h3>
                   <ul>
                     {tutorialData.common_uses.map((use, idx) => (
                       <li key={idx}>{use}</li>
@@ -390,7 +407,7 @@ export default function Components() {
                   </ul>
                 </div>
                 <div className="tutorial-section">
-                  <h3><Link2 size={16} color="#8b5cf6" /> Consejos de conexión</h3>
+                  <h3><Link2 size={16} color="#8b5cf6" /> {lang === 'es' ? 'Consejos de conexión' : 'Connection tips'}</h3>
                   <p>{tutorialData.connection_tips}</p>
                 </div>
                 
@@ -398,12 +415,14 @@ export default function Components() {
                 <div className="tutorial-chat-section" style={{ marginTop: '32px', borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
                   <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b', marginBottom: '16px' }}>
                     <Bot size={16} color="#3b82f6" style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                    ¿Tienes dudas? Pregúntale a Elektra
+                    {lang === 'es' ? '¿Tienes dudas? Pregúntale a Elektra' : 'Have questions? Ask Elektra'}
                   </h3>
                   
                   <div className="tutorial-chat-messages" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px', maxHeight: '150px', overflowY: 'auto' }}>
                     {chatMessages.length === 0 && !isSendingChat && (
-                      <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>Escribe una pregunta sobre este componente...</p>
+                      <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>
+                        {lang === 'es' ? 'Escribe una pregunta sobre este componente...' : 'Type a question about this component...'}
+                      </p>
                     )}
                     {chatMessages.map((msg, idx) => (
                       <div key={idx} className="chat-markdown-wrapper" style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', background: msg.role === 'user' ? '#3b82f6' : '#f1f5f9', color: msg.role === 'user' ? 'white' : '#334155', padding: '8px 12px', borderRadius: '12px', maxWidth: '85%', fontSize: '13px' }}>
@@ -412,7 +431,7 @@ export default function Components() {
                     ))}
                     {isSendingChat && (
                        <div style={{ alignSelf: 'flex-start', background: '#f1f5f9', color: '#334155', padding: '8px 12px', borderRadius: '12px', fontSize: '13px' }}>
-                         Elektra está escribiendo...
+                         {lang === 'es' ? 'Elektra está escribiendo...' : 'Elektra is typing...'}
                        </div>
                     )}
                   </div>
@@ -423,7 +442,7 @@ export default function Components() {
                       value={chatInput}
                       onChange={e => setChatInput(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && handleSendChat()}
-                      placeholder="Ej. ¿Cuántos voltios soporta?"
+                      placeholder={lang === 'es' ? 'Ej. ¿Cuántos voltios soporta?' : 'e.g. How many volts can it support?'}
                       style={{ flex: 1, padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '20px', outline: 'none', fontSize: '13px' }}
                     />
                     <button 
@@ -431,7 +450,7 @@ export default function Components() {
                       disabled={isSendingChat || !chatInput.trim()}
                       style={{ background: '#f59e0b', color: 'white', border: 'none', borderRadius: '20px', padding: '0 16px', cursor: 'pointer', fontWeight: '600', fontSize: '13px', opacity: (isSendingChat || !chatInput.trim()) ? 0.6 : 1 }}
                     >
-                      Enviar
+                      {lang === 'es' ? 'Enviar' : 'Send'}
                     </button>
                   </div>
                 </div>
