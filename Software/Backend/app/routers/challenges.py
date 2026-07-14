@@ -7,12 +7,35 @@ from app.services.gemini_service import get_ai_service
 router = APIRouter()
 
 @router.get("/daily", response_model=DailyChallenge)
-def get_daily_challenge(current_user: User = Depends(get_current_user)):
+def get_daily_challenge(lang: str = "es", current_user: User = Depends(get_current_user)):
     ai_service = get_ai_service()
     
     skill_level = current_user.skill_level or "Principiante"
     
-    prompt = f"""
+    if lang == "en":
+        prompt = f"""
+You are an expert basic electronics professor.
+Generate a daily electronics challenge for a student at skill level: {skill_level}.
+The challenge should evaluate their theoretical knowledge interactively.
+
+INSTRUCTIONS FOR THE CHALLENGE:
+1. Generate 3 questions in total.
+2. Mix question types between 'multiple_choice' (multiple choice) and 'matching' (matching concepts).
+3. For 'multiple_choice', provide 4 clear options and the index of the correct answer (0-3).
+4. For 'matching', provide exactly 4 pairs of terms and definitions.
+5. The title must be attractive and the description motivating.
+6. The reward (xp_reward) must be 150 for Beginner, 250 for Intermediate, 350 for Advanced.
+7. Questions should relate to electronics fundamentals, passive components, series/parallel circuits, Kirchhoff's and Ohm's laws.
+8. Adjust the difficulty based on the level:
+   - Beginner (if level is Principiante): Very basic concepts, symbols, elementary functions (e.g. what does a resistor do?, how is voltage measured?).
+   - Intermediate (if level is Intermedio): Basic Ohm's Law calculations, series/parallel behavior, breadboard usage.
+   - Advanced (if level is Avanzado): Power calculations, voltage/current dividers, simple loop/node analysis, transistor or capacitor usage.
+
+IMPORTANT: Respond ONLY with valid JSON matching the provided schema. Do not add markdown backticks or any other text.
+All text in the output JSON (title, description, questions, options, definitions, terms, hints) MUST be written in English.
+"""
+    else:
+        prompt = f"""
 Eres un profesor experto en electrónica básica.
 Genera un reto diario de electrónica para un estudiante de nivel: {skill_level}.
 El reto debe evaluar sus conocimientos teóricos de forma interactiva.

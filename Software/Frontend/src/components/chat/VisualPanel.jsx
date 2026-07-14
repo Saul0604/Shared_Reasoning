@@ -1,17 +1,19 @@
 import useChatStore from '../../store/useChatStore'
 import BreadboardCanvas from '../BreadboardCanvas'
-import { Share2, MoreHorizontal, MessageSquare } from 'lucide-react'
+import { Share2, MoreHorizontal, MessageSquare, Cpu, MapPin, ClipboardList, Copy, Loader2, RefreshCw, Maximize2 } from 'lucide-react'
+import { useTranslation } from '../../utils/i18n'
 
 export default function VisualPanel() {
   const {
     extractResult,
     currentStep,
     setCurrentStep,
-    schemaPreviewUrl,
     extractLoading,
     chatPanelCollapsed,
     toggleChatPanel,
   } = useChatStore()
+
+  const { t, lang } = useTranslation()
 
   const circuit = extractResult?.project?.circuit
   const steps = extractResult?.project?.assembly_steps ?? []
@@ -26,27 +28,29 @@ export default function VisualPanel() {
       {/* Header */}
       <div className="visual-panel__header">
         <div className="visual-panel__header-left">
-          <h2 className="visual-panel__title">Conversión a Protoboard</h2>
+          <h2 className="visual-panel__title">
+            {lang === 'es' ? 'Conversión a Protoboard' : 'Breadboard Conversion'}
+          </h2>
           <p className="visual-panel__subtitle">
             {extractLoading
-              ? '⏳ Analizando tu esquema y generando el montaje...'
+              ? (lang === 'es' ? '⏳ Analizando tu esquema y generando el montaje...' : '⏳ Analyzing your schematic and generating assembly...')
               : circuit
-                ? `${components.length} componentes · ${connections.length} conexiones`
-                : 'El asistente está interpretando tu esquema.'}
+                ? (lang === 'es' ? `${components.length} componentes · ${connections.length} conexiones` : `${components.length} components · ${connections.length} connections`)
+                : (lang === 'es' ? 'El asistente está interpretando tu esquema.' : 'Assistant is interpreting your schematic.')}
           </p>
         </div>
         <div className="visual-panel__header-actions">
           <button className="visual-panel__action-btn">
             <Share2 size={16} />
-            Compartir
+            {lang === 'es' ? 'Compartir' : 'Share'}
           </button>
-          <button className="visual-panel__more-btn" title="Más opciones">
+          <button className="visual-panel__more-btn" title={lang === 'es' ? 'Más opciones' : 'More options'}>
             <MoreHorizontal size={18} />
           </button>
           <button
             className={`visual-panel__chat-toggle ${chatPanelCollapsed ? 'visual-panel__chat-toggle--active' : ''}`}
             onClick={toggleChatPanel}
-            title={chatPanelCollapsed ? 'Abrir chat' : 'Cerrar chat'}
+            title={chatPanelCollapsed ? (lang === 'es' ? 'Abrir chat' : 'Open chat') : (lang === 'es' ? 'Cerrar chat' : 'Close chat')}
           >
             <MessageSquare size={18} />
           </button>
@@ -55,44 +59,53 @@ export default function VisualPanel() {
 
       {/* Body */}
       <div className="visual-panel__body">
-        {/* Protoboard View */}
-        <div className="visual-section">
-          <div className="visual-section__header">
-            <div>
-              <div className="visual-section__title">
-                <span className="visual-section__title-icon">🔌</span>
-                Vista Protoboard
+        {/* Group header and protoboard canvas to control gap independently from parent's 32px gap */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          {/* Protoboard View */}
+          <div className="visual-section">
+            <div className="visual-section__header">
+              <div>
+                <div className="visual-section__title">
+                  <Cpu size={18} style={{ color: '#2563eb' }} />
+                  {t('protoView')}
+                </div>
+                <span className="visual-section__subtitle">
+                  {circuit
+                    ? t('protoSubtitleCircuit')
+                    : t('protoSubtitleNoCircuit')}
+                </span>
               </div>
-              <span className="visual-section__subtitle">
-                {circuit
-                  ? 'Imagen generada por IA a partir de las coordenadas calculadas.'
-                  : 'La protoboard aparecerá aquí al analizar un esquema.'}
-              </span>
-            </div>
-            <div className="visual-section__actions">
-              <button className="visual-section__icon-btn" title="Actualizar">🔄</button>
-              <button className="visual-section__icon-btn" title="Expandir">↗</button>
+              <div className="visual-section__actions">
+                <button className="visual-section__icon-btn" title={lang === 'es' ? 'Actualizar' : 'Refresh'}>
+                  <RefreshCw size={14} />
+                </button>
+                <button className="visual-section__icon-btn" title={lang === 'es' ? 'Expandir' : 'Expand'}>
+                  <Maximize2 size={14} />
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Actual protoboard or placeholder */}
+          {/* Actual protoboard or placeholder (separated) */}
           {circuit ? (
-            <div style={{ height: '400px', borderTop: '1px solid #E5E7EB' }}>
+            <div style={{ height: '400px', overflow: 'hidden' }}>
               <BreadboardCanvas
                 circuit={circuit}
                 activeComponentId={activeComponentId}
               />
             </div>
           ) : (
-            <div className="visual-protoboard">
-              {extractLoading ? (
-                <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>⏳</div>
-                  <span style={{ fontSize: '14px', color: '#6B7280' }}>Generando protoboard...</span>
-                </div>
-              ) : (
-                <span style={{ position: 'relative', zIndex: 1 }}>🔌</span>
-              )}
+            <div className="visual-section">
+              <div className="visual-protoboard" style={{ padding: '40px 0' }}>
+                {extractLoading ? (
+                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Loader2 className="premium-spinner" size={32} style={{ color: '#2563eb', marginBottom: '12px' }} />
+                    <span style={{ fontSize: '14px', color: '#6B7280' }}>{t('protoLoading')}</span>
+                  </div>
+                ) : (
+                  <Cpu size={48} style={{ color: '#94a3b8', opacity: 0.5 }} />
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -103,8 +116,8 @@ export default function VisualPanel() {
             <div className="visual-coords">
               <div className="visual-coords__header">
                 <div className="visual-coords__title">
-                  <span>📍</span>
-                  Coordenadas utilizadas
+                  <MapPin size={18} style={{ color: '#2563eb' }} />
+                  {t('coordsTitle')}
                 </div>
                 <button className="visual-coords__copy-btn" onClick={() => {
                   const text = components.map(c => {
@@ -113,16 +126,17 @@ export default function VisualPanel() {
                   }).join('\n')
                   navigator.clipboard.writeText(text)
                 }}>
-                  📋 Copiar todo
+                  <Copy size={13} style={{ marginRight: '6px' }} />
+                  {t('coordsCopyBtn')}
                 </button>
               </div>
 
               <table className="visual-coords__table">
                 <thead>
                   <tr>
-                    <th>Componente</th>
-                    <th>Conexión / Posición</th>
-                    <th>Descripción</th>
+                    <th>{t('coordsColComponent')}</th>
+                    <th>{t('coordsColPosition')}</th>
+                    <th>{t('coordsColDesc')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -155,11 +169,11 @@ export default function VisualPanel() {
             <div className="visual-section__header">
               <div>
                 <div className="visual-section__title">
-                  <span className="visual-section__title-icon">📝</span>
-                  Pasos de ensamblaje
+                  <ClipboardList size={18} style={{ color: '#2563eb' }} />
+                  {t('assemblyStepsTitle')}
                 </div>
                 <span className="visual-section__subtitle">
-                  Paso {currentStep + 1} de {totalSteps}
+                  {t('assemblyStepOf', { curr: currentStep + 1, total: totalSteps })}
                 </span>
               </div>
             </div>
@@ -174,7 +188,7 @@ export default function VisualPanel() {
                     padding: '14px 20px',
                     cursor: 'pointer',
                     borderBottom: '1px solid #F3F4F6',
-                    background: currentStep === index ? '#FFFBEB' : 'white',
+                    background: currentStep === index ? 'rgba(245, 158, 11, 0.08)' : 'white',
                     borderLeft: currentStep === index ? '3px solid #F59E0B' : '3px solid transparent',
                     transition: 'all 0.15s ease',
                   }}
@@ -219,7 +233,7 @@ export default function VisualPanel() {
                 className="visual-panel__action-btn"
                 style={{ opacity: currentStep === 0 ? 0.4 : 1 }}
               >
-                ← Anterior
+                {t('stepPrev')}
               </button>
               <button
                 onClick={() => setCurrentStep(Math.min(totalSteps - 1, currentStep + 1))}
@@ -232,7 +246,7 @@ export default function VisualPanel() {
                   border: 'none',
                 }}
               >
-                Siguiente →
+                {t('stepNext')}
               </button>
             </div>
           </div>

@@ -5,7 +5,16 @@ const API_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000'
 // Obtiene los headers de autorización si existe token
 const getAuthHeaders = () => {
   const token = localStorage.getItem('access_token') || ''
-  return token ? { 'Authorization': `Bearer ${token}` } : {}
+  const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
+  
+  // Optional user-provided custom API keys from settings
+  const geminiKey = localStorage.getItem('user_gemini_api_key')
+  const openaiKey = localStorage.getItem('user_openai_api_key')
+  
+  if (geminiKey) headers['X-Gemini-API-Key'] = geminiKey
+  if (openaiKey) headers['X-OpenAI-API-Key'] = openaiKey
+  
+  return headers
 }
 
 const useChatStore = create((set, get) => ({
@@ -31,13 +40,28 @@ const useChatStore = create((set, get) => ({
   extractLoading: false,
 
   // AI Provider selection
-  selectedProvider: 'gemini', // 'gemini' | 'openai' | 'local'
+  selectedProvider: localStorage.getItem('selected_provider') || 'gemini', // 'gemini' | 'openai' | 'local'
+
+  // UI Preferences (i18n & theme)
+  language: localStorage.getItem('user_language') || 'es',
+  darkMode: localStorage.getItem('dark_mode') === 'true',
 
   // Actions
   toggleChatPanel: () => set((s) => ({ chatPanelCollapsed: !s.chatPanelCollapsed })),
   setChatPanelCollapsed: (v) => set({ chatPanelCollapsed: v }),
   setCurrentStep: (step) => set({ currentStep: step }),
-  setProvider: (provider) => set({ selectedProvider: provider }),
+  setProvider: (provider) => {
+    localStorage.setItem('selected_provider', provider)
+    set({ selectedProvider: provider })
+  },
+  setLanguage: (lang) => {
+    localStorage.setItem('user_language', lang)
+    set({ language: lang })
+  },
+  setDarkMode: (bool) => {
+    localStorage.setItem('dark_mode', bool)
+    set({ darkMode: bool })
+  },
 
   // Carga todas las sesiones de chat del usuario autenticado
   loadSessions: async () => {
@@ -269,6 +293,9 @@ const useChatStore = create((set, get) => ({
       const extractUrl = provider ? `${API_URL}/extract?provider=${provider}` : `${API_URL}/extract`
       const extractRes = await fetch(extractUrl, {
         method: 'POST',
+        headers: {
+          ...headers
+        },
         body: formData,
       })
 

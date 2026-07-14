@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import useChatStore from '../../store/useChatStore'
+import { useTranslation } from '../../utils/i18n'
 
 const MODEL_OPTIONS = [
   { value: 'gemini', label: 'Gemini 2.5' },
@@ -19,6 +20,7 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
 
   const selectedProvider = useChatStore((s) => s.selectedProvider)
   const setProvider = useChatStore((s) => s.setProvider)
+  const { t, lang } = useTranslation()
 
   const currentModel = MODEL_OPTIONS.find((m) => m.value === selectedProvider) || MODEL_OPTIONS[0]
 
@@ -88,14 +90,14 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
         {imagePreview && (
           <div className="chat-input__preview">
             <img src={imagePreview} alt="Preview" className="chat-input__preview-img" />
-            <button className="chat-input__preview-remove" onClick={removeImage} title="Quitar imagen">✕</button>
+            <button className="chat-input__preview-remove" onClick={removeImage} title={lang === 'es' ? 'Quitar imagen' : 'Remove image'}>✕</button>
           </div>
         )}
         <form className="chat-sidebar__input" onSubmit={handleSubmit}>
           <input
             className="chat-sidebar__input-field"
             type="text"
-            placeholder="Escribe tu mensaje..."
+            placeholder={t('chatPlaceholder')}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -122,7 +124,7 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
       {imagePreview && (
         <div className="chat-input__preview">
           <img src={imagePreview} alt="Preview" className="chat-input__preview-img" />
-          <button className="chat-input__preview-remove" onClick={removeImage} title="Quitar imagen">✕</button>
+          <button className="chat-input__preview-remove" onClick={removeImage} title={lang === 'es' ? 'Quitar imagen' : 'Remove image'}>✕</button>
           <span className="chat-input__preview-name">{imageFile?.name}</span>
         </div>
       )}
@@ -133,7 +135,7 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
           <button
             type="button"
             className="chat-input__attach"
-            title="Adjuntar"
+            title={lang === 'es' ? 'Adjuntar' : 'Attach'}
             onClick={() => setMenuOpen(!menuOpen)}
           >
             ＋
@@ -148,8 +150,10 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
               >
                 <span className="chat-input__menu-icon">📐</span>
                 <div className="chat-input__menu-text">
-                  <span className="chat-input__menu-title">Diagrama</span>
-                  <span className="chat-input__menu-desc">Sube un esquema o diagrama de circuito</span>
+                  <span className="chat-input__menu-title">{lang === 'es' ? 'Diagrama' : 'Diagram'}</span>
+                  <span className="chat-input__menu-desc">
+                    {lang === 'es' ? 'Sube un esquema o diagrama de circuito' : 'Upload a schematic or circuit diagram'}
+                  </span>
                 </div>
               </button>
               <button
@@ -159,10 +163,12 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
               >
                 <span className="chat-input__menu-icon">📷</span>
                 <div className="chat-input__menu-text">
-                  <span className="chat-input__menu-title">Proto armada</span>
-                  <span className="chat-input__menu-desc">Foto de tu protoboard (próximamente)</span>
+                  <span className="chat-input__menu-title">{lang === 'es' ? 'Proto armada' : 'Assembled breadboard'}</span>
+                  <span className="chat-input__menu-desc">
+                    {lang === 'es' ? 'Foto de tu protoboard (próximamente)' : 'Photo of your breadboard (coming soon)'}
+                  </span>
                 </div>
-                <span className="chat-input__menu-badge">Pronto</span>
+                <span className="chat-input__menu-badge">{lang === 'es' ? 'Pronto' : 'Soon'}</span>
               </button>
             </div>
           )}
@@ -171,7 +177,7 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
         <input
           className="chat-input__field"
           type="text"
-          placeholder="Escribe tu mensaje..."
+          placeholder={t('chatPlaceholder')}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -183,7 +189,7 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
           <button
             type="button"
             className="chat-input__version"
-            title="Cambiar modelo de IA"
+            title={lang === 'es' ? 'Cambiar modelo de IA' : 'Change AI model'}
             onClick={() => setModelMenuOpen(!modelMenuOpen)}
           >
             {currentModel.label} <span className="chat-input__version-arrow">▾</span>
@@ -214,13 +220,15 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
           className="chat-input__send"
           type="submit"
           disabled={(!text.trim() && !imageFile) || isLoading}
-          title="Enviar"
+          title={t('chatSend')}
         >
           ➤
         </button>
       </form>
       <p className="chat-disclaimer">
-        Elektra puede cometer errores en cálculos complejos. Verifica tus diagramas antes de ensamblar.
+        {lang === 'es'
+          ? 'Elektra puede cometer errores en cálculos complejos. Verifica tus diagramas antes de ensamblar.'
+          : 'Elektra can make mistakes. Verify your circuit diagrams before assembly.'}
       </p>
     </div>
   )

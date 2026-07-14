@@ -4,8 +4,9 @@
   width: 100%;
   border-radius: 18px;
   overflow: hidden;
-  background: #1a1a2e;
-  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.3);
+  background: #f1f5f9; /* Light workspace background */
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
 /* ── Toolbar ── */
@@ -15,8 +16,8 @@
   justify-content: space-between;
   gap: 8px;
   padding: 10px 16px;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .breadboard-toolbar-group {
@@ -27,8 +28,8 @@
 
 .breadboard-toolbar-label {
   font-size: 12px;
-  font-weight: 600;
-  color: #94a3b8;
+  font-weight: 700;
+  color: #1e293b;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   margin-right: 4px;
@@ -38,9 +39,9 @@
 .view-toggle-btn {
   padding: 6px 14px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
-  color: #94a3b8;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -48,15 +49,15 @@
 }
 
 .view-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .view-toggle-btn.active {
   background: #2563eb;
   color: white;
   border-color: #2563eb;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
 
 /* ── Zoom Controls ── */
@@ -64,9 +65,9 @@
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
-  color: #94a3b8;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
@@ -77,13 +78,13 @@
 }
 
 .zoom-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .zoom-label {
   font-size: 11px;
-  color: #64748b;
+  color: #475569;
   font-weight: 600;
   min-width: 40px;
   text-align: center;
@@ -134,8 +135,8 @@
   flex-wrap: wrap;
   gap: 12px;
   padding: 10px 16px;
-  background: rgba(15, 23, 42, 0.6);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
 }
 
 .legend-item {
@@ -143,12 +144,12 @@
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: #94a3b8;
+  color: #475569;
 }
 
 .legend-swatch {
   width: 12px;
   height: 12px;
   border-radius: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid #cbd5e1;
 }

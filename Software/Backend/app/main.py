@@ -18,6 +18,24 @@ app = FastAPI(
 def on_startup():
     create_db_and_tables()
 
+from fastapi import Request
+from app.services.gemini_service import user_gemini_key_var, user_openai_key_var
+
+@app.middleware("http")
+async def extract_user_api_keys_middleware(request: Request, call_next):
+    gem_key = request.headers.get("x-gemini-api-key")
+    open_key = request.headers.get("x-openai-api-key")
+    
+    token_gem = user_gemini_key_var.set(gem_key if gem_key else None)
+    token_op = user_openai_key_var.set(open_key if open_key else None)
+    
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        user_gemini_key_var.reset(token_gem)
+        user_openai_key_var.reset(token_op)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
