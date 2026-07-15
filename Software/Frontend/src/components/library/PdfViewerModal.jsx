@@ -14,7 +14,8 @@ export default function PdfViewerModal({ material, onClose }) {
     const fetchPdf = async () => {
       try {
         const token = localStorage.getItem('access_token');
-        const res = await fetch(`http://localhost:8000/library/download/${material.id}`, {
+        const API_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000';
+        const res = await fetch(`${API_URL}/library/download/${material.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

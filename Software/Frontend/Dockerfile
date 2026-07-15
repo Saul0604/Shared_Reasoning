@@ -9,6 +9,9 @@ COPY package*.json ./
 # Instalar dependencias
 RUN npm install
 
+# Configurar variable de entorno para producción
+ENV VITE_BACKEND_URL=/api
+
 # Copiar el resto del código y construir la app
 COPY . .
 RUN npm run build
