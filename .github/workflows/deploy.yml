@@ -69,9 +69,9 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo docker pull pipeanayap/elektra-backend:latest
-            sudo docker pull pipeanayap/elektra-frontend:latest
+            docker pull pipeanayap/elektra-backend:latest
+            docker pull pipeanayap/elektra-frontend:latest
             cd ~/elektra-deploy
             # Iniciar o actualizar los servicios en base al docker-compose copiado
-            sudo docker compose up -d
-            sudo docker system prune -f
+            docker compose up -d
+            docker system prune -f
