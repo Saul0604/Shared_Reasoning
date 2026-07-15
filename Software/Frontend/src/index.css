@@ -653,3 +653,20 @@ body.dark-mode .library-tab.active {
   color: #ffffff !important;
   box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25) !important;
 }
+
+/* Processing animation styles for project cards */
+.project-card {
+  transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.project-card.is-deleting {
+  opacity: 0.4 !important;
+  transform: scale(0.96) !important;
+  pointer-events: none !important;
+}
+
+.project-card.is-archiving {
+  opacity: 0.6 !important;
+  transform: scale(0.98) !important;
+  pointer-events: none !important;
+}

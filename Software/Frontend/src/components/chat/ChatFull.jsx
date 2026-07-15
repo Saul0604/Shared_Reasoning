@@ -45,9 +45,10 @@ export default function ChatFull() {
   const [searchTerm, setSearchTerm] = useState('')
   const { t, lang } = useTranslation()
 
-  // Estados para renombrar
+  // Estados para renombrar y procesar
   const [editingSessionId, setEditingSessionId] = useState(null)
   const [editTitleValue, setEditTitleValue] = useState('')
+  const [processingSessions, setProcessingSessions] = useState({}) // { [sessionId]: 'deleting' | 'archiving' }
 
   const {
     messages,
@@ -107,7 +108,32 @@ export default function ChatFull() {
 
   const handleArchiveToggle = async (e, chatId, isCurrentlyArchived) => {
     e.stopPropagation()
-    await toggleArchiveSession(chatId, isCurrentlyArchived)
+    setProcessingSessions(prev => ({ ...prev, [chatId]: 'archiving' }))
+    try {
+      await toggleArchiveSession(chatId, isCurrentlyArchived)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setProcessingSessions(prev => {
+        const next = { ...prev }
+        delete next[chatId]
+        return next
+      })
+    }
+  }
+
+  const handleDeleteSession = async (chatId) => {
+    setProcessingSessions(prev => ({ ...prev, [chatId]: 'deleting' }))
+    try {
+      await deleteSession(chatId)
+    } catch (err) {
+      console.error(err)
+      setProcessingSessions(prev => {
+        const next = { ...prev }
+        delete next[chatId]
+        return next
+      })
+    }
   }
 
   const handleSuggestionClick = (s) => {
@@ -213,7 +239,7 @@ export default function ChatFull() {
                 </button>
                 <button 
                   onClick={() => {
-                    deleteSession(sessionToDelete)
+                    handleDeleteSession(sessionToDelete)
                     setSessionToDelete(null)
                   }}
                   style={{
@@ -312,7 +338,11 @@ export default function ChatFull() {
                             ? (sess.schema_image_base64.startsWith('data:') ? sess.schema_image_base64 : `data:image/jpeg;base64,${sess.schema_image_base64}`)
                             : null
                           return (
-                            <div key={`fav-${sess.id}`} className="project-card" onClick={() => selectSession(sess.id)}>
+                            <div 
+                              key={`fav-${sess.id}`} 
+                              className={`project-card ${processingSessions[sess.id] ? `is-${processingSessions[sess.id]}` : ''}`} 
+                              onClick={() => !processingSessions[sess.id] && selectSession(sess.id)}
+                            >
                               <div className="project-card__image-container">
                                 {hasImage ? (
                                   <img src={previewImage} alt={sess.title} className="project-card__image" />
@@ -359,6 +389,7 @@ export default function ChatFull() {
                                 <button
                                   className="project-card__archive-btn"
                                   onClick={(e) => handleArchiveToggle(e, sess.id, sess.is_archived)}
+                                  disabled={!!processingSessions[sess.id]}
                                   title={sess.is_archived ? (lang === 'es' ? "Desarchivar proyecto" : "Unarchive project") : (lang === 'es' ? "Archivar proyecto" : "Archive project")}
                                   style={{
                                     position: 'absolute',
@@ -379,7 +410,11 @@ export default function ChatFull() {
                                     zIndex: 10
                                   }}
                                 >
-                                  <Archive size={12} />
+                                  {processingSessions[sess.id] === 'archiving' ? (
+                                    <Loader2 size={12} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                                  ) : (
+                                    <Archive size={12} />
+                                  )}
                                 </button>
                               </div>
                               <div className="project-card__content">
@@ -461,9 +496,14 @@ export default function ChatFull() {
                                   e.stopPropagation()
                                   setSessionToDelete(sess.id)
                                 }}
+                                disabled={!!processingSessions[sess.id]}
                                 title={lang === 'es' ? "Eliminar proyecto" : "Delete project"}
                               >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                {processingSessions[sess.id] === 'deleting' ? (
+                                  <Loader2 size={12} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                                ) : (
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                )}
                               </button>
                             </div>
                           )
@@ -507,7 +547,11 @@ export default function ChatFull() {
                           ? (sess.schema_image_base64.startsWith('data:') ? sess.schema_image_base64 : `data:image/jpeg;base64,${sess.schema_image_base64}`)
                           : null
                         return (
-                          <div key={sess.id} className="project-card" onClick={() => selectSession(sess.id)}>
+                          <div 
+                            key={sess.id} 
+                            className={`project-card ${processingSessions[sess.id] ? `is-${processingSessions[sess.id]}` : ''}`} 
+                            onClick={() => !processingSessions[sess.id] && selectSession(sess.id)}
+                          >
                             <div className="project-card__image-container">
                               {hasImage ? (
                                 <img src={previewImage} alt={sess.title} className="project-card__image" />
@@ -554,6 +598,7 @@ export default function ChatFull() {
                               <button
                                   className="project-card__archive-btn"
                                   onClick={(e) => handleArchiveToggle(e, sess.id, sess.is_archived)}
+                                  disabled={!!processingSessions[sess.id]}
                                   title={sess.is_archived ? (lang === 'es' ? "Desarchivar proyecto" : "Unarchive project") : (lang === 'es' ? "Archivar proyecto" : "Archive project")}
                                   style={{
                                     position: 'absolute',
@@ -574,7 +619,11 @@ export default function ChatFull() {
                                     zIndex: 10
                                   }}
                                 >
-                                  <Archive size={12} />
+                                  {processingSessions[sess.id] === 'archiving' ? (
+                                    <Loader2 size={12} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                                  ) : (
+                                    <Archive size={12} />
+                                  )}
                                 </button>
                             </div>
                             <div className="project-card__content">
@@ -654,11 +703,16 @@ export default function ChatFull() {
                               className="project-card__delete-btn"
                               onClick={(e) => {
                                 e.stopPropagation()
-                                  setSessionToDelete(sess.id)
+                                setSessionToDelete(sess.id)
                               }}
+                              disabled={!!processingSessions[sess.id]}
                               title={lang === 'es' ? "Eliminar proyecto" : "Delete project"}
                             >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                              {processingSessions[sess.id] === 'deleting' ? (
+                                <Loader2 size={12} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                              ) : (
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                              )}
                             </button>
                           </div>
                         )

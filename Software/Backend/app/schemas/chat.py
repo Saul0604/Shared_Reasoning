@@ -15,6 +15,7 @@ class ChatRequest(BaseModel):
     circuit_context: Optional[Any] = None  # Generic/backwards compatibility
     project_context: Optional[Any] = None  # Full Project schema dict/JSON
     provider: Optional[str] = None  # Proveedor de IA: "gemini", "openai", "local"
+    skill_level: Optional[str] = None  # "Principiante" | "Intermedio" | "Avanzado"
 
 
 class ChatResponse(BaseModel):
