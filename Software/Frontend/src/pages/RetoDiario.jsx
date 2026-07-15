@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Star, Lightbulb, Loader2 } from 'lucide-react'
+import { Star, Lightbulb, Loader2, Flame } from 'lucide-react'
 import useChatStore from '../store/useChatStore'
+import useStreakStore from '../store/useStreakStore'
 import { useTranslation } from '../utils/i18n'
 import './RetoDiario.css'
 
@@ -21,6 +22,9 @@ export default function RetoDiario() {
   // Results state
   const [showResults, setShowResults] = useState(false)
   const [score, setScore] = useState(0)
+  const [streakResult, setStreakResult] = useState(null)
+  
+  const { streak, completeChallenge } = useStreakStore()
   
   useEffect(() => {
     async function loadChallenge() {
@@ -45,8 +49,14 @@ export default function RetoDiario() {
         setLoading(false)
       }
     }
-    loadChallenge()
-  }, [lang])
+    
+    // Only load if they haven't completed it today
+    if (streak && streak.completed_today) {
+      navigate('/app/retos')
+    } else {
+      loadChallenge()
+    }
+  }, [lang, streak, navigate])
 
   if (loading) {
     const displayLevel = nivel.toLowerCase() === 'principiante' 
@@ -83,20 +93,25 @@ export default function RetoDiario() {
   const question = challenge.questions[step]
   const totalQuestions = challenge.questions.length
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < totalQuestions - 1) {
       setStep(step + 1)
     } else {
       // Calculate score and show results
+      if (totalQuestions === 0) {
+        navigate('/app/retos')
+        return
+      }
+
       let newScore = 0
       challenge.questions.forEach((q, i) => {
         const userAns = answers[i]
         if (q.type === 'multiple_choice') {
-          if (userAns === q.correct_answer) newScore += 1
+          if (userAns !== undefined && userAns === q.correct_answer) newScore += 1
         } else if (q.type === 'matching') {
           // Check if all pairs are matched correctly
           let allCorrect = true
-          if (!userAns) {
+          if (userAns === undefined || userAns === null) {
             allCorrect = false
           } else {
             q.pairs.forEach((pair, pairIdx) => {
@@ -108,6 +123,15 @@ export default function RetoDiario() {
       })
       setScore(newScore)
       setShowResults(true)
+      
+      // If all answers correct, register completion in backend
+      const passed = newScore === totalQuestions && totalQuestions > 0
+      if (passed) {
+        const result = await completeChallenge(newScore, totalQuestions, challenge.xp_reward)
+        if (result) {
+          setStreakResult(result)
+        }
+      }
     }
   }
 
@@ -155,12 +179,24 @@ export default function RetoDiario() {
           </p>
           
           {passed && (
-            <div className="xp-pill" style={{ display: 'inline-block', fontSize: '18px', padding: '8px 24px', marginBottom: '32px' }}>
+            <div className="xp-pill" style={{ display: 'inline-block', fontSize: '18px', padding: '8px 24px', marginBottom: '16px' }}>
               +{challenge.xp_reward} XP
             </div>
           )}
 
-          <div>
+          {/* Streak display after successful completion */}
+          {passed && streakResult && (
+            <div className="streak-result-banner">
+              <Flame size={24} color="#f59e0b" />
+              <span className="streak-result-text">
+                {lang === 'es' 
+                  ? `🔥 Racha: ${streakResult.current_streak} ${streakResult.current_streak === 1 ? 'día' : 'días'}` 
+                  : `🔥 Streak: ${streakResult.current_streak} ${streakResult.current_streak === 1 ? 'day' : 'days'}`}
+              </span>
+            </div>
+          )}
+
+          <div style={{ marginTop: '24px' }}>
             <button className="btn-primary-orange" onClick={() => navigate('/app/retos')}>
               {lang === 'es' ? 'Volver a Retos' : 'Back to Challenges'}
             </button>
