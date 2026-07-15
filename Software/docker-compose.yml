@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    image: pipeanayaparada/elektra-backend:latest
+    image: pipeanayap/elektra-backend:latest
     container_name: elektra_backend
     restart: unless-stopped
     ports:
@@ -29,7 +29,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   frontend:
-    image: pipeanayaparada/elektra-frontend:latest
+    image: pipeanayap/elektra-frontend:latest
     container_name: elektra_frontend
     restart: unless-stopped
     ports:
