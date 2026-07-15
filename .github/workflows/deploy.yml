@@ -28,7 +28,7 @@ jobs:
           context: ./Software/Backend
           file: ./Software/Backend/Dockerfile
           push: true
-          tags: pipeanayaparada/elektra-backend:latest
+          tags: pipeanayap/elektra-backend:latest
           cache-from: type=gha
           cache-to: type=gha, mode=max
 
@@ -38,7 +38,7 @@ jobs:
           context: ./Software/Frontend
           file: ./Software/Frontend/Dockerfile
           push: true
-          tags: pipeanayaparada/elektra-frontend:latest
+          tags: pipeanayap/elektra-frontend:latest
           cache-from: type=gha
           cache-to: type=gha, mode=max
 
@@ -69,8 +69,8 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo docker pull pipeanayaparada/elektra-backend:latest
-            sudo docker pull pipeanayaparada/elektra-frontend:latest
+            sudo docker pull pipeanayap/elektra-backend:latest
+            sudo docker pull pipeanayap/elektra-frontend:latest
             cd ~/elektra-deploy
             # Iniciar o actualizar los servicios en base al docker-compose copiado
             sudo docker compose up -d
