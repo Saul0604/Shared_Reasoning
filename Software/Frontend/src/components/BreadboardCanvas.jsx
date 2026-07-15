@@ -264,7 +264,7 @@ function ComponentShape({ component, isHighlighted, onHover, onLeave }) {
     shape = <MeterBody cx={cx} cy={cy} letter={letter} theme={theme} isHighlighted={isHighlighted} x1={x1} y1={y1} x2={x2} y2={y2} />
   } else if (typeLower === 'resistor' || typeLower === 'resistencia') {
     shape = <ResistorBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} isHighlighted={isHighlighted} value={component.value} x1={x1} y1={y1} x2={x2} y2={y2} />
-  } else if (typeLower === 'battery' || typeLower === 'bateria' || typeLower === 'fuente' || typeLower === 'power_supply') {
+  } else if (typeLower === 'battery' || typeLower === 'bateria' || typeLower === 'fuente' || typeLower === 'power_supply' || typeLower === 'voltage_source') {
     shape = <BatteryBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} isHighlighted={isHighlighted} x1={x1} y1={y1} x2={x2} y2={y2} />
   } else if (typeLower === 'switch' || typeLower === 'interruptor') {
     shape = <SwitchBody cx={cx} cy={cy} w={bodyW} h={bodyH} theme={theme} isHighlighted={isHighlighted} x1={x1} y1={y1} x2={x2} y2={y2} />

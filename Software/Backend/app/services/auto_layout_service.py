@@ -62,7 +62,7 @@ class AutoLayoutService:
             return self.DEFAULT_VALUES.get(comp_type.lower(), comp_type.capitalize())
         return value
 
-    def generate_layout(self, netlist: LogicalNetlist) -> Project:
+    def generate_layout(self, netlist: LogicalNetlist, skill_level: str = "Principiante") -> Project:
         # ═══════════════════════════════════════════════════════════
         # PASO 0: CONSTRUIR ESTRUCTURAS DE DATOS
         # ═══════════════════════════════════════════════════════════
@@ -294,7 +294,7 @@ class AutoLayoutService:
                             wire_color="rojo",
                             breadboard=ConnectionBreadboard(
                                 from_row="+", from_col=pos[1],
-                                to_row=pos[0], to_col=pos[1]
+                                to_row="a", to_col=pos[1]  # Usamos la fila 'a' para que no choque con el componente
                             )
                         ))
                         routed_power_cols.add(rail_key)
@@ -309,7 +309,7 @@ class AutoLayoutService:
                             to_pin="negative",
                             wire_color="negro",
                             breadboard=ConnectionBreadboard(
-                                from_row=pos[0], from_col=pos[1],
+                                from_row="e", from_col=pos[1], # Usamos la fila 'e' para que no choque con el componente
                                 to_row="-", to_col=pos[1]
                             )
                         ))
@@ -360,17 +360,29 @@ class AutoLayoutService:
 
         # Pasos de colocación de componentes
         for idx, comp in enumerate(placed_components):
-            desc = f"Coloca {comp.id} ({comp.type}) en la protoboard. "
-            if comp.breadboard.row_start in ["+", "-"]:
-                desc += f"Terminal positivo en riel (+), columna {comp.breadboard.col_start}. "
-                desc += f"Terminal negativo en riel (-), columna {comp.breadboard.col_end}."
-            else:
-                desc += f"Pin {comp.pins[0].name} en {comp.pins[0].position.upper()}. "
-                desc += f"Pin {comp.pins[1].name} en {comp.pins[1].position.upper()}."
+            # Adaptamos el nivel de andamiaje según el skill_level del usuario
+            if skill_level == "Avanzado":
+                if comp.breadboard.row_start in ["+", "-"]:
+                    desc = f"Conectar a rieles: col {comp.breadboard.col_start} (+) y col {comp.breadboard.col_end} (-)."
+                else:
+                    desc = f"Posición: {comp.pins[0].position.upper()} a {comp.pins[1].position.upper()}."
+            elif skill_level == "Intermedio":
+                if comp.breadboard.row_start in ["+", "-"]:
+                    desc = f"Inserta {comp.id} entre el riel positivo (col {comp.breadboard.col_start}) y negativo (col {comp.breadboard.col_end})."
+                else:
+                    desc = f"Inserta {comp.id} en los puntos {comp.pins[0].position.upper()} y {comp.pins[1].position.upper()}."
+            else: # Principiante
+                desc = f"Toma el componente {comp.id} (que es un {comp.type}). "
+                if comp.breadboard.row_start in ["+", "-"]:
+                    desc += f"Conecta su terminal positivo en el riel de energía (+) en la columna {comp.breadboard.col_start}. "
+                    desc += f"Luego, conecta su terminal negativo en el riel (-) en la columna {comp.breadboard.col_end}. Asegúrate de que quede firme."
+                else:
+                    desc += f"Dobla sus patitas cuidadosamente e inserta el pin {comp.pins[0].name} en el agujero {comp.pins[0].position.upper()}. "
+                    desc += f"Inserta el pin {comp.pins[1].name} en el agujero {comp.pins[1].position.upper()}."
 
             assembly_steps.append(AssemblyStep(
                 step_number=idx + 1,
-                title=f"Colocar {comp.id}",
+                title=f"Colocar {comp.id}" if skill_level != "Avanzado" else f"{comp.id}",
                 description=desc,
                 component_id=comp.id
             ))
@@ -393,10 +405,20 @@ class AutoLayoutService:
             # Usar el componente real (no "power_rail") como component_id del paso
             real_comp = conn.to_component if conn.from_component == "power_rail" else conn.from_component
 
+            if skill_level == "Avanzado":
+                desc = f"{from_label} -> {to_label}"
+                title = f"Jumper {conn.wire_color}"
+            elif skill_level == "Intermedio":
+                desc = f"Puentea desde {from_label} hasta {to_label}."
+                title = f"Cable {conn.wire_color}"
+            else:
+                desc = f"Toma un cable de color {conn.wire_color}. Conecta un extremo en {from_label} y el otro extremo en {to_label} para cerrar el circuito."
+                title = f"Conectar cable {conn.wire_color}"
+
             assembly_steps.append(AssemblyStep(
                 step_number=step_num,
-                title=f"Cable {conn.wire_color}",
-                description=f"Conecta un cable {conn.wire_color} desde {from_label} hasta {to_label}.",
+                title=title,
+                description=desc,
                 component_id=real_comp
             ))
             step_num += 1

@@ -164,6 +164,10 @@ def post_chat_message(
     # Validar propiedad del chat (o acceso compartido)
     db_session = check_session_access(chat_id, current_user.id, session)
 
+    # Inyectar el nivel del usuario autenticado en el request para el andamiaje pedagógico
+    if current_user.skill_level:
+        request.skill_level = current_user.skill_level
+
     # 1. Llamar primero al servicio de la IA. Si esto falla, no guardamos nada en BD.
     try:
         response = service.chat(request, provider=request.provider)

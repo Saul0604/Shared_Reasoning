@@ -6,11 +6,16 @@ export default function Classes() {
     <div className="classes-page" style={{ padding: '32px' }}>
       <h1 className="settings-title">{t('navClases')}</h1>
       <p className="settings-subtitle">
-        {lang === 'es' 
-          ? 'Explora cursos, lecciones interactivas y material de estudio sobre electrónica básica y circuitos.' 
+        {lang === 'es'
+          ? 'Explora cursos, lecciones interactivas y material de estudio sobre electrónica básica y circuitos.'
           : 'Explore courses, interactive lessons, and study materials on basic electronics and circuits.'}
       </p>
-      
+      <p className="settings-subtitle">
+        {lang === 'es'
+          ? 'Esta pagina, actualmente se encuentra en construccion, nada del contenido es real, es un mock-up'
+          : 'This page is currently under construction, none of the content is real, it\'s a mock-up'}
+      </p>
+
       <div style={{ marginTop: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
         {[
           {
