@@ -62,3 +62,4 @@ psycopg2-binary==2.9.10
 pymysql==1.1.0
 cryptography==42.0.5
 Pillow>=10.0.0
+PyMuPDF>=1.23.0
