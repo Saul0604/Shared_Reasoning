@@ -213,10 +213,9 @@ const useChatStore = create((set, get) => ({
         set((s) => ({
           sessions: s.sessions.filter(sess => sess.id !== sessionId),
           currentSessionId: s.currentSessionId === sessionId ? null : s.currentSessionId,
-          chatViewMode: 'history'
         }))
         if (get().currentSessionId === null) {
-          get().clearChat()
+          get().clearChat(true) // preserve view mode so we don't jump to 'new_chat'
         }
       }
     } catch (err) {
@@ -224,7 +223,7 @@ const useChatStore = create((set, get) => ({
     }
   },
 
-  clearChat: () => set({
+  clearChat: (preserveView = false) => set((s) => ({
     messages: [],
     visualMode: false,
     extractResult: null,
@@ -233,8 +232,8 @@ const useChatStore = create((set, get) => ({
     chatPanelCollapsed: false,
     extractLoading: false,
     currentSessionId: null,
-    chatViewMode: 'new_chat'
-  }),
+    chatViewMode: preserveView ? s.chatViewMode : 'new_chat'
+  })),
 
   goBackToHistory: () => set({
     messages: [],

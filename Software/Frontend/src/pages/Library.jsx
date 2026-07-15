@@ -17,6 +17,15 @@ export default function Library() {
   
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedMaterialForView, setSelectedMaterialForView] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  // Clear toast after 3 seconds
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
 
   // Fetch materials whenever category or difficulty changes
   useEffect(() => {
@@ -120,7 +129,13 @@ export default function Library() {
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <UploadMaterialModal onClose={() => setShowUploadModal(false)} />
+        <UploadMaterialModal 
+          onClose={() => setShowUploadModal(false)} 
+          onSuccess={() => {
+            setShowUploadModal(false);
+            setToastMessage(t('libUploadSuccess') || '¡Material subido correctamente! ✅');
+          }}
+        />
       )}
 
       {/* PDF Viewer Modal */}
@@ -129,6 +144,29 @@ export default function Library() {
           material={selectedMaterialForView} 
           onClose={() => setSelectedMaterialForView(null)} 
         />
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          background: '#1e293b',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+          zIndex: 1000,
+          fontSize: '13px',
+          fontWeight: '600',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          animation: 'popoverFadeIn 0.2s ease-out'
+        }}>
+          {toastMessage}
+        </div>
       )}
     </div>
   );

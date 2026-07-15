@@ -41,6 +41,8 @@ const getSuggestions = (lang) => [
 export default function ChatFull() {
   const [activeTab, setActiveTab] = useState('mis_proyectos')
   const [toastMessage, setToastMessage] = useState(null)
+  const [sessionToDelete, setSessionToDelete] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
   const { t, lang } = useTranslation()
 
   // Estados para renombrar
@@ -125,14 +127,21 @@ export default function ChatFull() {
   // CASO A: Si estamos en modo dashboard (historial de proyectos)
   if (chatViewMode === 'history' && !currentSessionId) {
     // Filtrar proyectos favoritos
-    const favoritos = sessions.filter(s => s.is_favorite)
+    let favoritos = sessions.filter(s => s.is_favorite)
+    if (searchTerm.trim() !== '') {
+      favoritos = favoritos.filter(s => s.title.toLowerCase().includes(searchTerm.toLowerCase()))
+    }
 
     // Determinar qué proyectos se muestran en la sección principal
-    const proyectosAMostrar = activeTab === 'compartidos'
+    let proyectosAMostrar = activeTab === 'compartidos'
       ? sharedSessions
       : activeTab === 'archivados'
         ? archivedSessions
         : sessions
+
+    if (searchTerm.trim() !== '') {
+      proyectosAMostrar = proyectosAMostrar.filter(s => s.title.toLowerCase().includes(searchTerm.toLowerCase()))
+    }
 
     return (
       <div className="projects-dashboard">
@@ -156,6 +165,71 @@ export default function ChatFull() {
             animation: 'popoverFadeIn 0.2s ease-out'
           }}>
             {toastMessage}
+          </div>
+        )}
+
+        {/* Custom Delete Confirmation Modal */}
+        {sessionToDelete && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            backdropFilter: 'blur(4px)'
+          }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '24px',
+              maxWidth: '400px',
+              width: '90%',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+            }}>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', color: '#1e293b' }}>
+                {lang === 'es' ? '¿Eliminar proyecto?' : 'Delete project?'}
+              </h3>
+              <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#64748b' }}>
+                {lang === 'es' 
+                  ? 'Esta acción eliminará el proyecto y todo su historial de chat. No se puede deshacer.' 
+                  : 'This action will delete the project and all its chat history. It cannot be undone.'}
+              </p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button 
+                  onClick={() => setSessionToDelete(null)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    background: 'white',
+                    color: '#475569',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {lang === 'es' ? 'Cancelar' : 'Cancel'}
+                </button>
+                <button 
+                  onClick={() => {
+                    deleteSession(sessionToDelete)
+                    setSessionToDelete(null)
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#ef4444',
+                    color: 'white',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {lang === 'es' ? 'Eliminar' : 'Delete'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -189,10 +263,13 @@ export default function ChatFull() {
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </span>
             <input
+              id="search-proyectos"
               type="text"
               className="projects-dashboard__search-input"
               placeholder={lang === 'es' ? 'Buscar proyecto...' : 'Search project...'}
               style={{ paddingLeft: '36px' }}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
@@ -306,7 +383,7 @@ export default function ChatFull() {
                                 </button>
                               </div>
                               <div className="project-card__content">
-                                {editingSessionId === sess.id ? (
+                                {editingSessionId === 'fav-' + sess.id ? (
                                   <input
                                     type="text"
                                     value={editTitleValue}
@@ -335,7 +412,7 @@ export default function ChatFull() {
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation()
-                                        setEditingSessionId(sess.id)
+                                        setEditingSessionId('fav-' + sess.id)
                                         setEditTitleValue(sess.title)
                                       }}
                                       style={{
@@ -382,9 +459,7 @@ export default function ChatFull() {
                                 className="project-card__delete-btn"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  if (confirm(lang === 'es' ? '¿Eliminar este proyecto y todo su historial de chat?' : 'Delete this project and all its chat history?')) {
-                                    deleteSession(sess.id)
-                                  }
+                                  setSessionToDelete(sess.id)
                                 }}
                                 title={lang === 'es' ? "Eliminar proyecto" : "Delete project"}
                               >
@@ -399,7 +474,7 @@ export default function ChatFull() {
                 )}
 
                 {/* Sección Todos los Proyectos o Compartidos */}
-                <div className="projects-section" style={{ marginTop: '24px' }}>
+                <div id="todos-los-proyectos" className="dashboard-section" style={{ marginTop: '32px' }}>
                   <h2 className="projects-section__title">
                     {activeTab === 'compartidos'
                       ? (lang === 'es' ? 'Proyectos compartidos contigo' : 'Projects shared with you')
@@ -503,7 +578,7 @@ export default function ChatFull() {
                                 </button>
                             </div>
                             <div className="project-card__content">
-                              {editingSessionId === sess.id ? (
+                              {editingSessionId === 'all-' + sess.id ? (
                                 <input
                                   type="text"
                                   value={editTitleValue}
@@ -532,7 +607,7 @@ export default function ChatFull() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      setEditingSessionId(sess.id)
+                                      setEditingSessionId('all-' + sess.id)
                                       setEditTitleValue(sess.title)
                                     }}
                                     style={{
@@ -579,9 +654,7 @@ export default function ChatFull() {
                               className="project-card__delete-btn"
                               onClick={(e) => {
                                 e.stopPropagation()
-                                if (confirm(lang === 'es' ? '¿Eliminar este proyecto y todo su historial de chat?' : 'Delete this project and all its chat history?')) {
-                                  deleteSession(sess.id)
-                                }
+                                  setSessionToDelete(sess.id)
                               }}
                               title={lang === 'es' ? "Eliminar proyecto" : "Delete project"}
                             >
@@ -634,7 +707,17 @@ export default function ChatFull() {
                     {lang === 'es' ? 'No hay actividad reciente registrada.' : 'No recent activity recorded.'}
                   </div>
                 )}
-                <button className="widget-history-link">
+                <button 
+                  className="widget-history-link"
+                  onClick={() => {
+                    setActiveTab('mis_proyectos');
+                    const el = document.getElementById('search-proyectos');
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      setTimeout(() => el.focus(), 300);
+                    }
+                  }}
+                >
                   {lang === 'es' ? 'ver todo el historial' : 'view full history'}
                 </button>
               </div>
