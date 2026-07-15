@@ -1,0 +1,77 @@
+name: Deploy Elektra on push
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up docker build
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to docker
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Software/Backend
+          file: ./Software/Backend/Dockerfile
+          push: true
+          tags: pipeanayaparada/elektra-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha, mode=max
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Software/Frontend
+          file: ./Software/Frontend/Dockerfile
+          push: true
+          tags: pipeanayaparada/elektra-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha, mode=max
+
+      - name: Create .env file for deployment
+        run: |
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > Software/.env
+          echo "MODEL_PROVIDER=${{ secrets.MODEL_PROVIDER }}" >> Software/.env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> Software/.env
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> Software/.env
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> Software/.env
+          echo "ALGORITHM=HS256" >> Software/.env
+          echo "ACCESS_TOKEN_EXPIRE_MINUTES=1440" >> Software/.env
+
+      - name: Copy docker-compose and .env to Server
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "Software/docker-compose.yml,Software/.env"
+          target: "~/elektra-deploy"
+          strip_components: 1
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo docker pull pipeanayaparada/elektra-backend:latest
+            sudo docker pull pipeanayaparada/elektra-frontend:latest
+            cd ~/elektra-deploy
+            # Iniciar o actualizar los servicios en base al docker-compose copiado
+            sudo docker compose up -d
+            sudo docker system prune -f

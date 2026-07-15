@@ -10,7 +10,7 @@ from app.services.gemini_service import get_ai_service
 
 class ExtractService:
 
-    def extract(self, image: str, provider: str = None):
+    def extract(self, image: str, provider: str = None, skill_level: str = "Principiante"):
         # Si la imagen es de prueba, corta o vacía, usamos el simulador
         if not image or len(image) < 100 or "base64_string_aqui" in image:
             circuit = Circuit(
@@ -95,7 +95,7 @@ class ExtractService:
             print("="*60 + "\n")
             
             # 2. Generamos el layout físico en la protoboard de manera determinista mediante algoritmos matemáticos
-            project = auto_layout_service.generate_layout(logical_netlist)
+            project = auto_layout_service.generate_layout(logical_netlist, skill_level=skill_level)
 
             # DEBUG: Imprimir el project resultante
             print("\n" + "="*60)

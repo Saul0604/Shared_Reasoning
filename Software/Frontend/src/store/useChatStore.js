@@ -290,7 +290,10 @@ const useChatStore = create((set, get) => ({
       const formData = new FormData()
       formData.append('file', file)
       const provider = get().selectedProvider
-      const extractUrl = provider ? `${API_URL}/extract?provider=${provider}` : `${API_URL}/extract`
+      const skillLevel = get().user?.skill_level || 'Principiante'
+      const extractUrl = provider 
+        ? `${API_URL}/extract?provider=${provider}&skill_level=${skillLevel}` 
+        : `${API_URL}/extract?skill_level=${skillLevel}`
       const extractRes = await fetch(extractUrl, {
         method: 'POST',
         headers: {
@@ -403,6 +406,7 @@ const useChatStore = create((set, get) => ({
           project_context: extractResult?.project || null,
           current_step: extractResult ? get().currentStep : null,
           provider: get().selectedProvider,
+          skill_level: get().user?.skill_level || null,
         }),
       })
 
