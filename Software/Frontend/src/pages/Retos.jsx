@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   Clock, BarChart, Star, Award, Calendar, CheckCircle2, 
   MessageSquare, Lock, BookOpen, Zap, Lightbulb, Trophy, Brain
 } from 'lucide-react'
 import useChatStore from '../store/useChatStore'
+import useStreakStore from '../store/useStreakStore'
 import { useTranslation } from '../utils/i18n'
 import './Retos.css'
 
@@ -12,6 +13,21 @@ export default function Retos() {
   const { user } = useChatStore()
   const navigate = useNavigate()
   const { lang } = useTranslation()
+  
+  // Load streak data from backend
+  const { streak, streakLoading, loadStreak, weeklyProgress, weeklyLoading, loadWeeklyProgress } = useStreakStore()
+  
+  useEffect(() => {
+    loadStreak()
+    loadWeeklyProgress()
+  }, [])
+  
+  // Icon and color config for each weekly progress category
+  const progressConfig = {
+    retos: { icon: <Trophy size={14} color="#f59e0b" />, color: '#f59e0b' },
+    interacciones: { icon: <MessageSquare size={14} color="#3b82f6" />, color: '#3b82f6' },
+    laboratorios: { icon: <Zap size={14} color="#10b981" />, color: '#10b981' },
+  }
   
   const getLevelLabel = (level) => {
     if (!level) return lang === 'es' ? 'Principiante' : 'Beginner';
@@ -28,6 +44,21 @@ export default function Retos() {
     return level;
   }
 
+  // Define the progression badges and required XP
+  const BADGES = [
+    { id: 1, reqXp: 150, titleEs: 'Primer Circuito', titleEn: 'First Circuit', icon: Lightbulb, color: '#d97706', bg: '#fef3c7' },
+    { id: 2, reqXp: 500, titleEs: 'Maestro del LED', titleEn: 'LED Master', icon: Zap, color: '#2563eb', bg: '#dbeafe' },
+    { id: 3, reqXp: 1000, titleEs: 'Experto en Resistencias', titleEn: 'Resistor Expert', icon: Trophy, color: '#059669', bg: '#d1fae5' },
+    { id: 4, reqXp: 2000, titleEs: 'Energía Constante', titleEn: 'Constant Power', icon: BookOpen, color: '#7c3aed', bg: '#ede9fe' },
+    { id: 5, reqXp: 3500, titleEs: 'Constructor', titleEn: 'Builder', icon: Award, color: '#ea580c', bg: '#ffedd5' },
+    { id: 6, reqXp: 5000, titleEs: 'Ingeniero Maestro', titleEn: 'Master Engineer', icon: Brain, color: '#be185d', bg: '#fce7f3' }
+  ]
+
+  // Calculate next reward based on total_xp
+  const totalXp = streak.total_xp || 0
+  const nextBadge = BADGES.find(b => totalXp < b.reqXp)
+  const xpNeeded = nextBadge ? nextBadge.reqXp - totalXp : 0
+
   return (
     <div className="retos-page">
       <div className="retos-header">
@@ -43,7 +74,10 @@ export default function Retos() {
       <div className="retos-card reto-dia-section">
         <div className="reto-dia-header">
           <h2>{lang === 'es' ? 'Reto del día' : 'Challenge of the Day'}</h2>
-          <span className="tag-nuevo">{lang === 'es' ? '🔥 Nuevo' : '🔥 New'}</span>
+          {streak.completed_today 
+            ? <span className="tag-completado">✅ {lang === 'es' ? 'Completado' : 'Completed'}</span>
+            : <span className="tag-nuevo">{lang === 'es' ? '🔥 Nuevo' : '🔥 New'}</span>
+          }
         </div>
         <p className="reto-dia-desc">
           {lang === 'es' 
@@ -57,8 +91,16 @@ export default function Retos() {
           <div className="reto-tag badge"><Award size={14} /> {lang === 'es' ? 'Insignia exclusiva' : 'Exclusive Badge'}</div>
         </div>
         <div className="reto-actions">
-          <button className="btn-primary-orange" onClick={() => navigate('/app/retos/diario')}>
-            {lang === 'es' ? 'Comenzar reto' : 'Start challenge'}
+          <button 
+            className="btn-primary-orange" 
+            onClick={() => navigate('/app/retos/diario')}
+            disabled={streak.completed_today}
+            style={streak.completed_today ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+          >
+            {streak.completed_today 
+              ? (lang === 'es' ? 'Ya completado hoy' : 'Already completed today')
+              : (lang === 'es' ? 'Comenzar reto' : 'Start challenge')
+            }
           </button>
           <button className="btn-outline">
             {lang === 'es' ? 'Ver instrucciones' : 'View instructions'}
@@ -72,8 +114,8 @@ export default function Retos() {
         <div className="retos-card">
           <h3 className="retos-card-title">{lang === 'es' ? '🔥 Tu racha' : '🔥 Your Streak'}</h3>
           <div className="racha-content">
-            <div className="racha-circle-wrapper">
-              <span className="num">6</span>
+            <div className={`racha-circle-wrapper ${streak.current_streak > 0 ? 'active' : 'inactive'}`}>
+              <span className="num">{streakLoading ? '…' : streak.current_streak}</span>
               <span className="text">{lang === 'es' ? 'DÍAS' : 'DAYS'}</span>
             </div>
             <div className="racha-stats">
@@ -82,21 +124,34 @@ export default function Retos() {
                   <div className="icon-container blue"><Calendar size={14} /></div>
                   {lang === 'es' ? 'Días de uso consecutivo' : 'Consecutive active days'}
                 </div>
-                <span className="racha-stat-val">6</span>
+                <span className="racha-stat-val">{streakLoading ? '…' : streak.current_streak}</span>
               </div>
               <div className="racha-stat-row">
                 <div className="racha-stat-left">
                   <div className="icon-container green"><CheckCircle2 size={14} /></div>
                   {lang === 'es' ? 'Retos completados' : 'Completed challenges'}
                 </div>
-                <span className="racha-stat-val">4</span>
+                <span className="racha-stat-val">{streakLoading ? '…' : streak.total_completed}</span>
               </div>
               <div className="racha-stat-row">
                 <div className="racha-stat-left">
-                  <div className="icon-container purple"><MessageSquare size={14} /></div>
-                  {lang === 'es' ? 'Interacciones Chat Elektra' : 'Elektra Chat Interactions'}
+                  <div className="icon-container purple"><CheckCircle2 size={14} /></div>
+                  {lang === 'es' ? 'Completado hoy' : 'Completed today'}
                 </div>
-                <span className="racha-stat-val">6</span>
+                <span className="racha-stat-val">
+                  {streakLoading ? '…' : (streak.completed_today 
+                    ? (lang === 'es' ? 'Sí ✅' : 'Yes ✅') 
+                    : (lang === 'es' ? 'No' : 'No'))}
+                </span>
+              </div>
+              <div className="racha-stat-row">
+                <div className="racha-stat-left">
+                  <div className="icon-container" style={{ background: '#fef3c7', color: '#d97706' }}>
+                    <Star size={14} />
+                  </div>
+                  {lang === 'es' ? 'XP Total' : 'Total XP'}
+                </div>
+                <span className="racha-stat-val" style={{ color: '#d97706' }}>{streakLoading ? '…' : totalXp}</span>
               </div>
             </div>
           </div>
@@ -108,16 +163,30 @@ export default function Retos() {
             <Star size={16} color="#d97706" /> {lang === 'es' ? 'Próxima recompensa' : 'Next Reward'}
           </h3>
           <div className="recompensa-card">
-            <div className="recompensa-icon-wrapper">
-              <Brain size={32} />
-            </div>
-            <h4 className="recompensa-title">{lang === 'es' ? 'Ingeniero en Formación' : 'Engineer in Training'}</h4>
-            <p className="recompensa-desc">
-              {lang === 'es' 
-                ? 'Completa 2 retos más para desbloquear esta insignia.' 
-                : 'Complete 2 more challenges to unlock this badge.'}
-            </p>
-            <span className="xp-pill">+300 XP</span>
+            {nextBadge ? (
+              <>
+                <div className="recompensa-icon-wrapper" style={{ background: `linear-gradient(135deg, ${nextBadge.bg} 0%, #fde68a 100%)`, color: nextBadge.color }}>
+                  <nextBadge.icon size={32} />
+                </div>
+                <h4 className="recompensa-title">{lang === 'es' ? nextBadge.titleEs : nextBadge.titleEn}</h4>
+                <p className="recompensa-desc">
+                  {lang === 'es' 
+                    ? `Consigue ${xpNeeded} XP más para desbloquear esta insignia.`
+                    : `Earn ${xpNeeded} more XP to unlock this badge.`}
+                </p>
+                <span className="xp-pill">{totalXp} / {nextBadge.reqXp} XP</span>
+              </>
+            ) : (
+              <>
+                <div className="recompensa-icon-wrapper" style={{ background: 'linear-gradient(135deg, #fce7f3 0%, #fde68a 100%)', color: '#be185d' }}>
+                  <Brain size={32} />
+                </div>
+                <h4 className="recompensa-title">{lang === 'es' ? '¡Todo Desbloqueado!' : 'All Unlocked!'}</h4>
+                <p className="recompensa-desc">
+                  {lang === 'es' ? 'Has obtenido todas las insignias posibles.' : 'You have earned all possible badges.'}
+                </p>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -131,94 +200,61 @@ export default function Retos() {
             <span className="link-ver-todas">{lang === 'es' ? 'Ver todas' : 'View all'}</span>
           </div>
           <div className="insignias-grid">
-            <div className="insignia-item">
-              <div className="insignia-icon" style={{ background: '#fef3c7', color: '#d97706' }}>
-                <Lightbulb size={24} />
-              </div>
-              <span className="insignia-label">{lang === 'es' ? 'Primer Circuito' : 'First Circuit'}</span>
-            </div>
-            <div className="insignia-item">
-              <div className="insignia-icon" style={{ background: '#dbeafe', color: '#2563eb' }}>
-                <Zap size={24} />
-              </div>
-              <span className="insignia-label">{lang === 'es' ? 'Maestro del LED' : 'LED Master'}</span>
-            </div>
-            <div className="insignia-item locked">
-              <Lock size={14} className="lock-icon" />
-              <div className="insignia-icon">
-                <Trophy size={24} />
-              </div>
-              <span className="insignia-label">{lang === 'es' ? 'Experto en Resistencias' : 'Resistor Expert'}</span>
-            </div>
-            <div className="insignia-item locked">
-              <Lock size={14} className="lock-icon" />
-              <div className="insignia-icon">
-                <BookOpen size={24} />
-              </div>
-              <span className="insignia-label">{lang === 'es' ? 'Energía Constante' : 'Constant Power'}</span>
-            </div>
-            <div className="insignia-item locked">
-              <Lock size={14} className="lock-icon" />
-              <div className="insignia-icon">
-                <Award size={24} />
-              </div>
-              <span className="insignia-label">{lang === 'es' ? 'Constructor' : 'Builder'}</span>
-            </div>
-            <div className="insignia-item locked">
-              <Lock size={14} className="lock-icon" />
-              <div className="insignia-icon">
-                <BookOpen size={24} />
-              </div>
-              <span className="insignia-label">{lang === 'es' ? 'Lector Dedicado' : 'Dedicated Reader'}</span>
-            </div>
+            {BADGES.map((badge) => {
+              const isUnlocked = totalXp >= badge.reqXp
+              const Icon = badge.icon
+              return (
+                <div key={badge.id} className={`insignia-item ${!isUnlocked ? 'locked' : ''}`}>
+                  {!isUnlocked && <Lock size={14} className="lock-icon" />}
+                  <div 
+                    className="insignia-icon" 
+                    style={isUnlocked ? { background: badge.bg, color: badge.color } : {}}
+                  >
+                    <Icon size={24} />
+                  </div>
+                  <span className="insignia-label">{lang === 'es' ? badge.titleEs : badge.titleEn}</span>
+                </div>
+              )
+            })}
           </div>
         </div>
 
         {/* Progreso Semanal */}
         <div className="retos-card">
           <h3 className="retos-card-title">{lang === 'es' ? 'Progreso semanal' : 'Weekly Progress'}</h3>
+          {weeklyProgress.week_start && (
+            <p className="progreso-week-range">
+              {lang === 'es' ? 'Semana:' : 'Week:'} {weeklyProgress.week_start} → {weeklyProgress.week_end}
+            </p>
+          )}
           <div className="progreso-list">
-            
-            <div className="progreso-item">
-              <div className="progreso-header">
-                <span className="label"><Trophy size={14} color="#f59e0b" /> {lang === 'es' ? 'Retos' : 'Challenges'}</span>
-                <span className="pct">80%</span>
-              </div>
-              <div className="progreso-bar-bg">
-                <div className="progreso-bar-fill" style={{ width: '80%', background: '#f59e0b' }} />
-              </div>
-            </div>
-
-            <div className="progreso-item">
-              <div className="progreso-header">
-                <span className="label"><Clock size={14} color="#3b82f6" /> {lang === 'es' ? 'Tiempo' : 'Time'}</span>
-                <span className="pct">60%</span>
-              </div>
-              <div className="progreso-bar-bg">
-                <div className="progreso-bar-fill" style={{ width: '60%', background: '#3b82f6' }} />
-              </div>
-            </div>
-
-            <div className="progreso-item">
-              <div className="progreso-header">
-                <span className="label"><Zap size={14} color="#10b981" /> {lang === 'es' ? 'Laboratorios' : 'Labs'}</span>
-                <span className="pct">90%</span>
-              </div>
-              <div className="progreso-bar-bg">
-                <div className="progreso-bar-fill" style={{ width: '90%', background: '#10b981' }} />
-              </div>
-            </div>
-
-            <div className="progreso-item">
-              <div className="progreso-header">
-                <span className="label"><BookOpen size={14} color="#8b5cf6" /> {lang === 'es' ? 'Lectura' : 'Reading'}</span>
-                <span className="pct">30%</span>
-              </div>
-              <div className="progreso-bar-bg">
-                <div className="progreso-bar-fill" style={{ width: '30%', background: '#8b5cf6' }} />
-              </div>
-            </div>
-
+            {weeklyLoading ? (
+              <p style={{ color: '#94a3b8', fontSize: '13px' }}>{lang === 'es' ? 'Cargando...' : 'Loading...'}</p>
+            ) : weeklyProgress.items.length > 0 ? (
+              weeklyProgress.items.map((item) => {
+                const config = progressConfig[item.key] || { icon: <Star size={14} />, color: '#94a3b8' }
+                return (
+                  <div className="progreso-item" key={item.key}>
+                    <div className="progreso-header">
+                      <span className="label">
+                        {config.icon} {lang === 'es' ? item.label_es : item.label_en}
+                      </span>
+                      <span className="pct">{item.percentage}%</span>
+                    </div>
+                    <div className="progreso-bar-bg">
+                      <div className="progreso-bar-fill" style={{ width: `${item.percentage}%`, background: config.color }} />
+                    </div>
+                    <span className="progreso-detail">
+                      {item.current}/{item.goal}
+                    </span>
+                  </div>
+                )
+              })
+            ) : (
+              <p style={{ color: '#94a3b8', fontSize: '13px' }}>
+                {lang === 'es' ? 'Sin actividad esta semana' : 'No activity this week'}
+              </p>
+            )}
           </div>
         </div>
       </div>

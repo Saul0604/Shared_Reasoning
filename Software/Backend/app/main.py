@@ -7,6 +7,7 @@ from app.routers import verify
 from app.routers import chat
 from app.routers import auth
 from app.core.database import create_db_and_tables
+from app.models.streak import ChallengeCompletion  # noqa: F401 — imported so SQLModel creates the table
 
 app = FastAPI(
     title = "Shared Reasoning API",
