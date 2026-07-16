@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, UploadCloud, FileText, ChevronDown } from 'lucide-react';
 import useLibraryStore from '../../store/useLibraryStore';
 
-export default function UploadMaterialModal({ onClose }) {
+export default function UploadMaterialModal({ onClose, onSuccess }) {
   const uploadMaterial = useLibraryStore(state => state.uploadMaterial);
   const [loading, setLoading] = useState(false);
   
@@ -35,7 +35,11 @@ export default function UploadMaterialModal({ onClose }) {
       data.append('file', formData.file);
 
       await uploadMaterial(data);
-      onClose(); // Cerrar modal si fue exitoso
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        onClose(); // Fallback if onSuccess is not provided
+      }
     } catch (error) {
       alert(error.message);
     } finally {
@@ -63,38 +67,61 @@ export default function UploadMaterialModal({ onClose }) {
               onChange={handleChange} 
               placeholder="Ej: Fundamentos de Circuitos" 
               required 
+              className="premium-input"
             />
           </div>
           
           <div className="form-group">
             <label>Categoría</label>
-            <select name="category" value={formData.category} onChange={handleChange}>
-              <option value="Libros">Libros</option>
-              <option value="PDFs">PDFs</option>
-              <option value="Guías">Guías</option>
-              <option value="Datasheets">Datasheets</option>
-            </select>
+            <div className="select-wrapper">
+              <select className="premium-select" name="category" value={formData.category} onChange={handleChange}>
+                <option value="Libros">Libros</option>
+                <option value="PDFs">PDFs</option>
+                <option value="Guías">Guías</option>
+                <option value="Datasheets">Datasheets</option>
+              </select>
+              <ChevronDown className="select-icon" size={16} />
+            </div>
           </div>
           
           <div className="form-group">
             <label>Dificultad</label>
-            <select name="difficulty" value={formData.difficulty} onChange={handleChange}>
-              <option value="Principiante">Principiante</option>
-              <option value="Intermedio">Intermedio</option>
-              <option value="Avanzado">Avanzado</option>
-              <option value="Referencia">Referencia</option>
-            </select>
+            <div className="select-wrapper">
+              <select className="premium-select" name="difficulty" value={formData.difficulty} onChange={handleChange}>
+                <option value="Principiante">Principiante</option>
+                <option value="Intermedio">Intermedio</option>
+                <option value="Avanzado">Avanzado</option>
+                <option value="Referencia">Referencia</option>
+              </select>
+              <ChevronDown className="select-icon" size={16} />
+            </div>
           </div>
           
           <div className="form-group">
             <label>Archivo (PDF)</label>
-            <input 
-              type="file" 
-              name="file" 
-              accept=".pdf" 
-              onChange={handleChange} 
-              required 
-            />
+            <div className="file-upload-wrapper">
+              <label className="file-upload-box">
+                <input 
+                  type="file" 
+                  name="file" 
+                  accept=".pdf" 
+                  onChange={handleChange} 
+                  required 
+                  className="file-input-hidden"
+                />
+                <div className="file-upload-content">
+                  <UploadCloud size={32} className="upload-icon" />
+                  <span className="upload-text">
+                    {formData.file ? (
+                      <span style={{ color: '#2563EB', fontWeight: '600' }}>{formData.file.name}</span>
+                    ) : (
+                      'Haz clic para seleccionar el PDF'
+                    )}
+                  </span>
+                  <span className="upload-subtext">PDF hasta 10MB</span>
+                </div>
+              </label>
+            </div>
           </div>
           
           <div className="modal-actions">

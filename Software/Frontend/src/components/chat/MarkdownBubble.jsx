@@ -1,4 +1,5 @@
 import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 /**
  * Renders a chat bubble with Markdown support.
@@ -8,6 +9,7 @@ export default function MarkdownBubble({ content, className }) {
   return (
     <div className={className}>
       <Markdown
+        remarkPlugins={[remarkGfm]}
         components={{
           // Override default elements to avoid extra margins in bubbles
           p: ({ children }) => <p style={{ margin: '0 0 8px 0' }}>{children}</p>,
@@ -39,28 +41,41 @@ export default function MarkdownBubble({ content, className }) {
               </pre>
             ),
           table: ({ children }) => (
-            <div style={{ overflowX: 'auto', margin: '8px 0' }}>
+            <div style={{ overflowX: 'auto', margin: '12px 0', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.08)' }}>
               <table style={{
                 width: '100%',
                 borderCollapse: 'collapse',
                 fontSize: '0.9em',
+                background: 'white',
               }}>{children}</table>
             </div>
           ),
+          thead: ({ children }) => <thead style={{ background: 'rgba(0,0,0,0.04)' }}>{children}</thead>,
           th: ({ children }) => (
             <th style={{
               textAlign: 'left',
-              padding: '6px 10px',
+              padding: '10px 14px',
               borderBottom: '2px solid rgba(0,0,0,0.1)',
-              fontWeight: 600,
+              fontWeight: 700,
+              color: '#1e293b',
               fontSize: '0.85em',
+              textTransform: 'uppercase',
+              letterSpacing: '0.02em'
             }}>{children}</th>
           ),
           td: ({ children }) => (
             <td style={{
-              padding: '6px 10px',
+              padding: '10px 14px',
               borderBottom: '1px solid rgba(0,0,0,0.06)',
+              color: '#334155'
             }}>{children}</td>
+          ),
+          tr: ({ children }) => (
+            <tr style={{ transition: 'background-color 0.2s' }} 
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.02)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+              {children}
+            </tr>
           ),
           h1: ({ children }) => <h3 style={{ fontSize: '1.1em', fontWeight: 700, margin: '8px 0 4px' }}>{children}</h3>,
           h2: ({ children }) => <h4 style={{ fontSize: '1.05em', fontWeight: 700, margin: '8px 0 4px' }}>{children}</h4>,

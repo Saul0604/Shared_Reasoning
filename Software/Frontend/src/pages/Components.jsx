@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Search, TriangleAlert, Bot, X, Loader2, Info, Zap, Puzzle, Link2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useTranslation } from '../utils/i18n'
 import './Components.css'
 
@@ -426,7 +427,7 @@ export default function Components() {
                     )}
                     {chatMessages.map((msg, idx) => (
                       <div key={idx} className="chat-markdown-wrapper" style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', background: msg.role === 'user' ? '#3b82f6' : '#f1f5f9', color: msg.role === 'user' ? 'white' : '#334155', padding: '8px 12px', borderRadius: '12px', maxWidth: '85%', fontSize: '13px' }}>
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                       </div>
                     ))}
                     {isSendingChat && (

@@ -35,6 +35,13 @@ export default function Profile() {
 
   const handleSave = async (e) => {
     e.preventDefault()
+    
+    // Validar que el nombre no esté vacío o sea puros espacios
+    if (!fullName || fullName.trim() === '') {
+      alert('El nombre completo no puede estar vacío.')
+      return
+    }
+
     setSaving(true)
     setSuccess(false)
 
