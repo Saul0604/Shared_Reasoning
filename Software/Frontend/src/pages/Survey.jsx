@@ -4,7 +4,7 @@ import { ArrowRight, Check, User, Lock, Mail } from 'lucide-react'
 import useAppStore from '../store/useAppStore'
 import './Survey.css'
 
-const backendUrl = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000'
+const backendUrl = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api')
 
 // ============================================================
 //  Question Data

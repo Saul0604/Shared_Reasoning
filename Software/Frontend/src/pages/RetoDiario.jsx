@@ -31,7 +31,7 @@ export default function RetoDiario() {
       try {
         setLoading(true)
         const token = localStorage.getItem('access_token')
-        const API_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000'
+        const API_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api')
         
         const response = await fetch(`${API_URL}/challenges/daily?lang=${lang}`, {
           headers: {

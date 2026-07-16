@@ -4,7 +4,7 @@ import { User, Lock, X } from 'lucide-react';
 import useAppStore from '../store/useAppStore';
 
 
-const backendUrl = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000';
+const backendUrl = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
 
 const S = {
   container: {
