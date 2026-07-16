@@ -26,6 +26,7 @@ const useChatStore = create((set, get) => ({
   // Messages
   messages: [],
   isLoading: false,
+  isChatTyping: false,
   dashboardLoading: false,
 
   // Visual mode
@@ -384,7 +385,7 @@ const useChatStore = create((set, get) => ({
 
     // Add user message
     const userMsg = { role: 'user', content: text, timestamp: Date.now() }
-    set({ messages: [...messages, userMsg], isLoading: true })
+    set({ messages: [...messages, userMsg], isChatTyping: true })
 
     // Build history for the API
     const history = messages.map(m => ({ role: m.role, content: m.content }))
@@ -417,7 +418,7 @@ const useChatStore = create((set, get) => ({
 
       set({
         messages: [...get().messages, assistantMsg],
-        isLoading: false,
+        isChatTyping: false,
       })
 
       // Recargar las sesiones para actualizar títulos autogenerados
@@ -431,7 +432,7 @@ const useChatStore = create((set, get) => ({
         content: '⚠️ Hubo un error al conectar con el servidor. Intenta de nuevo.',
         timestamp: Date.now(),
       }
-      set({ messages: [...get().messages, errorMsg], isLoading: false })
+      set({ messages: [...get().messages, errorMsg], isChatTyping: false })
     }
   },
 

@@ -10,8 +10,8 @@ function formatTime(ts) {
 }
 
 export default function ChatSidebar() {
-  const { messages, isLoading, extractLoading, sendMessage, chatPanelCollapsed, toggleChatPanel, schemaPreviewUrl, goBackToHistory } = useChatStore()
-  const loading = isLoading || extractLoading
+  const { messages, isLoading, isChatTyping, extractLoading, sendMessage, chatPanelCollapsed, toggleChatPanel, schemaPreviewUrl, goBackToHistory } = useChatStore()
+  const loading = isLoading || isChatTyping || extractLoading
   const messagesEndRef = useRef(null)
   const [schemaExpanded, setSchemaExpanded] = useState(true)
   const [schemaFullscreen, setSchemaFullscreen] = useState(false)

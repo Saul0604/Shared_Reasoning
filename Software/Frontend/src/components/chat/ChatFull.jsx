@@ -51,6 +51,7 @@ export default function ChatFull() {
   const {
     messages,
     isLoading,
+    isChatTyping,
     sendMessage,
     extractFromImage,
     extractLoading,
@@ -758,7 +759,7 @@ export default function ChatFull() {
                 key={s.key}
                 className="chat-welcome__card"
                 onClick={() => handleSuggestionClick(s)}
-                disabled={isLoading}
+                disabled={isLoading || isChatTyping}
               >
                 <span className="chat-welcome__card-icon">{s.icon}</span>
                 <div className="chat-welcome__card-content">
@@ -779,7 +780,7 @@ export default function ChatFull() {
             />
           ))}
 
-          {isLoading && (
+          {(isLoading || isChatTyping) && (
             <div className="chat-loading">
               <div className="chat-loading__dot" />
               <div className="chat-loading__dot" />
@@ -791,7 +792,7 @@ export default function ChatFull() {
         </div>
       )}
 
-      <ChatInput onSend={sendMessage} isLoading={isLoading} />
+      <ChatInput onSend={sendMessage} isLoading={isLoading || isChatTyping} />
     </div>
   )
 }
