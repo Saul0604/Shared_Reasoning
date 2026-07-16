@@ -16,7 +16,7 @@ export default function MaterialCard({ material, onOpen }) {
     <div className="material-card" style={{ cursor: 'pointer' }} onClick={onOpen}>
       <div className="material-card__cover">
         {material.cover_image_url ? (
-          <img src={`${import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000'}${material.cover_image_url}`} alt={material.title} />
+          <img src={`${import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api')}${material.cover_image_url}`} alt={material.title} />
         ) : (
           <div className="material-card__cover-placeholder">
             {material.category === 'Libros' ? <Book size={48} strokeWidth={1} /> : <FileText size={48} strokeWidth={1} />}

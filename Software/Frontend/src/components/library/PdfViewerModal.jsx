@@ -14,19 +14,24 @@ export default function PdfViewerModal({ material, onClose }) {
     const fetchPdf = async () => {
       try {
         const token = localStorage.getItem('access_token');
-        const API_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000';
+        const API_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
         const res = await fetch(`${API_URL}/library/download/${material.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
 
-        if (!res.ok) throw new Error('No se pudo cargar el PDF');
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Error ${res.status}: ${errText}`);
+        }
 
-        const blob = await res.blob();
-        url = URL.createObjectURL(blob);
+        const rawBlob = await res.blob();
+        const pdfBlob = new Blob([rawBlob], { type: 'application/pdf' });
+        url = URL.createObjectURL(pdfBlob);
         setBlobUrl(url);
       } catch (err) {
+        console.error('Error fetching PDF:', err);
         setError(err.message);
       } finally {
         setLoading(false);
