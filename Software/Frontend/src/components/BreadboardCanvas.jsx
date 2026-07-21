@@ -231,6 +231,7 @@ const MIN_BODY_W = 50
 const MIN_BODY_H = 28
 
 function ComponentShape({ component, isHighlighted, onHover, onLeave }) {
+  const [isHovered, setIsHovered] = useState(false)
   const bb = component.breadboard
   if (!bb) return null
 
@@ -243,16 +244,48 @@ function ComponentShape({ component, isHighlighted, onHover, onLeave }) {
   const cy = (y1 + y2) / 2
   const rawW = Math.abs(x2 - x1)
   const rawH = Math.abs(y2 - y1)
-  const bodyW = Math.max(rawW, MIN_BODY_W)
-  const bodyH = Math.max(rawH, MIN_BODY_H)
 
-  const theme = getTheme(component.type)
   const typeLower = (component.type || '').toLowerCase()
+  const theme = getTheme(component.type)
+
+  // Usar tamaños fijos para el cuerpo de los componentes.
+  // Las patitas se estiraran hacia los pines, pero el cuerpo mantendra su proporcion realista.
+  let bodyW = MIN_BODY_W
+  let bodyH = MIN_BODY_H
+
+  if (typeLower === 'resistor' || typeLower === 'resistencia') {
+    bodyW = 54
+    bodyH = 14
+  } else if (typeLower === 'diode' || typeLower === 'diodo') {
+    bodyW = 50
+    bodyH = 11
+  } else if (typeLower === 'battery' || typeLower === 'bateria' || typeLower === 'fuente' || typeLower === 'power_supply' || typeLower === 'voltage_source') {
+    bodyW = 54
+    bodyH = 30
+  } else if (typeLower === 'led') {
+    bodyW = 28
+    bodyH = 28
+  } else if (typeLower === 'ammeter' || typeLower === 'amperimetro' || typeLower === 'voltmeter' || typeLower === 'voltimetro') {
+    bodyW = 44
+    bodyH = 44
+  } else if (typeLower === 'capacitor' || typeLower === 'condensador') {
+    bodyW = 24
+    bodyH = 24
+  } else if (typeLower === 'switch' || typeLower === 'interruptor') {
+    bodyW = 40
+    bodyH = 20
+  }
 
   const handleMouseEnter = (e) => {
+    setIsHovered(true)
     const stage = e.target.getStage()
     const pointer = stage.getPointerPosition()
     onHover(component, pointer)
+  }
+
+  const handleMouseLeave = (e) => {
+    setIsHovered(false)
+    if (onLeave) onLeave(e)
   }
 
   // Decide which shape to render
@@ -277,7 +310,7 @@ function ComponentShape({ component, isHighlighted, onHover, onLeave }) {
   }
 
   return (
-    <Group onMouseEnter={handleMouseEnter} onMouseLeave={onLeave}>
+    <Group onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       {/* Highlight glow */}
       {isHighlighted && (
         <Rect
@@ -298,29 +331,29 @@ function ComponentShape({ component, isHighlighted, onHover, onLeave }) {
       {/* Component body */}
       {shape}
 
-      {/* ID label (above) */}
-      <Group>
-        <Rect
-          x={cx - 20} y={cy - bodyH / 2 - 22}
-          width={40} height={16}
-          stroke={theme.border} strokeWidth={0.8}
-        />
-        <Text
-          x={cx - 20} y={cy - bodyH / 2 - 20}
-          width={40} height={14}
-          text={component.id} fontSize={10} fontStyle="bold"
-          fill={theme.text} align="center" verticalAlign="middle"
-        />
-      </Group>
+      {/* Labels - Only visible on hover or when highlighted */}
+      {(isHovered || isHighlighted) && (
+        <Group>
+          {/* ID label (above) - Minimal style */}
+          <Text
+            x={cx - 30} y={cy - bodyH / 2 - 14}
+            width={60} height={14}
+            text={component.id} fontSize={10} fontStyle="bold"
+            fill={theme.text} align="center" verticalAlign="bottom"
+            stroke="#ffffff" strokeWidth={3} fillAfterStrokeEnabled={true}
+          />
 
-      {/* Value label (below) */}
-      {component.value && !['null', 'none', 'unknown'].includes(component.value.toLowerCase()) && (
-        <Text
-          x={cx - 30} y={cy + bodyH / 2 + 8}
-          width={60}
-          text={component.value} fontSize={10}
-          fill="#6b7280" align="center"
-        />
+          {/* Value label (below) - Minimal style */}
+          {component.value && !['null', 'none', 'unknown'].includes(component.value.toLowerCase()) && (
+            <Text
+              x={cx - 40} y={cy + bodyH / 2 + 2}
+              width={80}
+              text={component.value} fontSize={9} fontStyle="bold"
+              fill="#475569" align="center"
+              stroke="#ffffff" strokeWidth={3} fillAfterStrokeEnabled={true}
+            />
+          )}
+        </Group>
       )}
     </Group>
   )
@@ -341,7 +374,7 @@ function getResistorBands(valueStr) {
     multiplier = 1000000
     val = val.replace('m', '')
   }
-  
+
   const num = parseFloat(val) * multiplier
   if (isNaN(num) || num < 1) return defaultBands
 
@@ -349,7 +382,7 @@ function getResistorBands(valueStr) {
   const parts = strExp.split('e')
   const base = parts[0].replace('.', '')
   const exp = parseInt(parts[1]) - 1
-  
+
   const colorMap = [
     '#1e1e1e', // 0: Black
     '#92400e', // 1: Brown
@@ -384,8 +417,8 @@ function ResistorBody({ cx, cy, w, h, theme, isHighlighted, value, x1, y1, x2, y
   return (
     <Group>
       {/* Resistor leads (thin metal wires connecting holes to body) */}
-      <Line points={[x1, y1, cx - bw/2, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
-      <Line points={[x2, y2, cx + bw/2, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
+      <Line points={[x1, y1, cx - bw / 2, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
+      <Line points={[x2, y2, cx + bw / 2, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
 
       {/* Flat resistor body */}
       <Rect
@@ -421,7 +454,7 @@ function ResistorBody({ cx, cy, w, h, theme, isHighlighted, value, x1, y1, x2, y
 function DiodeBody({ cx, cy, w, h, theme, isHighlighted, value, x1, y1, x2, y2 }) {
   const bw = Math.max(w, 50)
   const bh = 11 // slightly thinner than a resistor
-  
+
   const isGlass = (value || '').toLowerCase().includes('4148')
   const bodyColor = isGlass ? '#ff7043' : '#374151' // Orange glass for 1N4148, dark grey for rectifier
   const stripeColor = isGlass ? '#212121' : '#b0bec5' // Black stripe for 1N4148, silver stripe for rectifier
@@ -430,8 +463,8 @@ function DiodeBody({ cx, cy, w, h, theme, isHighlighted, value, x1, y1, x2, y2 }
   return (
     <Group>
       {/* Diode leads */}
-      <Line points={[x1, y1, cx - bw/2, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
-      <Line points={[x2, y2, cx + bw/2, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
+      <Line points={[x1, y1, cx - bw / 2, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
+      <Line points={[x2, y2, cx + bw / 2, cy]} stroke="#b0bec5" strokeWidth={1.5} lineCap="round" />
 
       {/* Flat diode body */}
       <Rect
@@ -460,7 +493,7 @@ function DiodeBody({ cx, cy, w, h, theme, isHighlighted, value, x1, y1, x2, y2 }
 // ── Capacitor Body ──
 function CapacitorBody({ cx, cy, w, h, theme, isHighlighted, x1, y1, x2, y2 }) {
   const r = 12
-  
+
   return (
     <Group>
       {/* Metal lead lines from breadboard pins to the capacitor body */}
@@ -509,12 +542,12 @@ function CapacitorBody({ cx, cy, w, h, theme, isHighlighted, x1, y1, x2, y2 }) {
 function BatteryBody({ cx, cy, w, h, theme, isHighlighted, x1, y1, x2, y2 }) {
   const bw = Math.max(w, 54)
   const bh = 30
-  
+
   return (
     <Group>
       {/* Wokwi battery wire leads (red for positive, black for negative) */}
-      <Line points={[x1, y1, cx - bw/2, cy - 6]} stroke="#ef4444" strokeWidth={1.5} tension={0.5} lineCap="round" />
-      <Line points={[x2, y2, cx - bw/2, cy + 6]} stroke="#212121" strokeWidth={1.5} tension={0.5} lineCap="round" />
+      <Line points={[x1, y1, cx - bw / 2, cy - 6]} stroke="#ef4444" strokeWidth={1.5} tension={0.5} lineCap="round" />
+      <Line points={[x2, y2, cx - bw / 2, cy + 6]} stroke="#212121" strokeWidth={1.5} tension={0.5} lineCap="round" />
 
       {/* Battery Body (Flat rectangle) */}
       <Rect
@@ -544,12 +577,12 @@ function BatteryBody({ cx, cy, w, h, theme, isHighlighted, x1, y1, x2, y2 }) {
         height={6}
         fill="#1e88e5"
       />
-      
+
       {/* Labels */}
-      <Text x={cx - 10} y={cy - 4} text="9V" fontSize={9} fontStyle="bold" fill="#ffffff" />
-      
-      <Text x={cx - bw/2 + 8} y={cy - 12} text="+" fontSize={10} fontStyle="bold" fill="#ef4444" />
-      <Text x={cx - bw/2 + 8} y={cy + 2} text="-" fontSize={12} fontStyle="bold" fill="#60a5fa" />
+      <Text x={cx - 14} y={cy - 4} text={theme.text === '#065f46' ? 'PWR' : '9V'} fontSize={9} fontStyle="bold" fill="#ffffff" />
+
+      <Text x={cx - bw / 2 + 8} y={cy - 12} text="+" fontSize={10} fontStyle="bold" fill="#ef4444" />
+      <Text x={cx - bw / 2 + 8} y={cy + 2} text="-" fontSize={12} fontStyle="bold" fill="#60a5fa" />
     </Group>
   )
 }
@@ -558,7 +591,7 @@ function BatteryBody({ cx, cy, w, h, theme, isHighlighted, x1, y1, x2, y2 }) {
 function LedBody({ cx, cy, w, h, value, isHighlighted, x1, y1, x2, y2 }) {
   const color = getLedColor(value)
   const r = 14
-  
+
   const darkColors = {
     '#ef4444': '#b91c1c', // Red
     '#22c55e': '#15803d', // Green
@@ -614,7 +647,7 @@ function LedBody({ cx, cy, w, h, value, isHighlighted, x1, y1, x2, y2 }) {
         stroke={darkColor}
         strokeWidth={1.5}
       />
-      
+
       {/* Base ring lip */}
       <Circle
         x={cx}
@@ -637,8 +670,8 @@ function MeterBody({ cx, cy, letter, theme, isHighlighted, x1, y1, x2, y2 }) {
   return (
     <Group>
       {/* Multimeter Probes Wires */}
-      <Line points={[x1, y1, cx - 10, cy + mh/2]} stroke="#ef4444" strokeWidth={1.5} tension={0.5} lineCap="round" />
-      <Line points={[x2, y2, cx + 10, cy + mh/2]} stroke="#212121" strokeWidth={1.5} tension={0.5} lineCap="round" />
+      <Line points={[x1, y1, cx - 10, cy + mh / 2]} stroke="#ef4444" strokeWidth={1.5} tension={0.5} lineCap="round" />
+      <Line points={[x2, y2, cx + 10, cy + mh / 2]} stroke="#212121" strokeWidth={1.5} tension={0.5} lineCap="round" />
 
       {/* Yellow Case (flat color block) */}
       <Rect
@@ -695,7 +728,7 @@ function MeterBody({ cx, cy, letter, theme, isHighlighted, x1, y1, x2, y2 }) {
 function SwitchBody({ cx, cy, w, h, theme, isHighlighted, x1, y1, x2, y2 }) {
   const bw = Math.max(w, 48)
   const bh = 18
-  
+
   return (
     <Group>
       {/* Switch terminal connection leads */}
@@ -737,12 +770,12 @@ function SwitchBody({ cx, cy, w, h, theme, isHighlighted, x1, y1, x2, y2 }) {
 function GenericBody({ cx, cy, w, h, theme, type, isHighlighted, x1, y1, x2, y2 }) {
   const bw = Math.max(w, 48)
   const bh = Math.max(h, 24)
-  
+
   return (
     <Group>
       {/* Silver pins connecting body to breadboard holes */}
-      <Line points={[x1, y1, cx - bw/2, y1]} stroke="#b0bec5" strokeWidth={2} lineCap="round" />
-      <Line points={[x2, y2, cx + bw/2, y2]} stroke="#b0bec5" strokeWidth={2} lineCap="round" />
+      <Line points={[x1, y1, cx - bw / 2, y1]} stroke="#b0bec5" strokeWidth={2} lineCap="round" />
+      <Line points={[x2, y2, cx + bw / 2, y2]} stroke="#b0bec5" strokeWidth={2} lineCap="round" />
 
       {/* Flat Black IC body */}
       <Rect
@@ -792,46 +825,64 @@ function WireConnection({ connection, index }) {
   const bb = connection.breadboard
   if (!bb) return null
 
+  // Determine correct rail context based on which section the other end is in
+  const fromContext = (bb.from_row === '+' || bb.from_row === '-')
+    ? (TOP_ROWS.includes(bb.to_row) ? 'top' : 'bottom')
+    : 'top'
+  const toContext = (bb.to_row === '+' || bb.to_row === '-')
+    ? (TOP_ROWS.includes(bb.from_row) ? 'top' : 'bottom')
+    : 'top'
+
   const fromX = getColX(bb.from_col)
-  const fromY = getRowY(bb.from_row)
+  const fromY = getRowY(bb.from_row, fromContext)
   const toX = getColX(bb.to_col)
-  const toY = getRowY(bb.to_row)
+  const toY = getRowY(bb.to_row, toContext)
 
   const color = resolveWireColor(connection.wire_color)
 
-  // Create a nice curved cable path
-  const dx = toX - fromX
-  const dy = toY - fromY
-  const dist = Math.sqrt(dx * dx + dy * dy)
-  // Offset the midpoint perpendicular to the line for a cable droop effect
+  // Simple controlled curve: midpoint with a small droop downward
   const midX = (fromX + toX) / 2
   const midY = (fromY + toY) / 2
-  const droop = Math.min(dist * 0.25, 30) + (index % 3) * 6
+  const dx = Math.abs(toX - fromX)
+  const dy = Math.abs(toY - fromY)
+  const dist = Math.sqrt(dx * dx + dy * dy)
 
-  // Perpendicular direction for variety
-  const angle = Math.atan2(dy, dx) + Math.PI / 2
-  const ctrlX = midX + Math.cos(angle) * droop
-  const ctrlY = midY + Math.sin(angle) * droop
+  // Droop magnitude: proportional to distance but capped
+  const droopMag = Math.min(dist * 0.15, 20) + (index % 3) * 4
+
+  // For mostly-vertical cables (rail to row), offset horizontally with small droop
+  // For mostly-horizontal cables (jumpers), offset vertically downward
+  let ctrlX, ctrlY
+  if (dy > dx) {
+    // Vertical-ish cable: small horizontal offset, keep midpoint Y
+    const dir = (index % 2 === 0) ? 1 : -1
+    ctrlX = midX + dir * droopMag * 0.5
+    ctrlY = midY
+  } else {
+    // Horizontal-ish cable: droop downward
+    ctrlX = midX
+    ctrlY = midY + droopMag
+  }
 
   return (
     <Group>
       {/* Wire shadow */}
-      <Line
-        points={[fromX, fromY, ctrlX + 1, ctrlY + 2, toX, toY]}
+      <Path
+        data={`M ${fromX} ${fromY} Q ${ctrlX + 1} ${ctrlY + 2} ${toX} ${toY}`}
         stroke="rgba(0,0,0,0.12)" strokeWidth={5.5}
-        lineCap="round" lineJoin="round" tension={0.45}
+        lineCap="round" lineJoin="round"
       />
       {/* Wire body */}
-      <Line
-        points={[fromX, fromY, ctrlX, ctrlY, toX, toY]}
+      <Path
+        data={`M ${fromX} ${fromY} Q ${ctrlX} ${ctrlY} ${toX} ${toY}`}
         stroke={color} strokeWidth={4}
-        lineCap="round" lineJoin="round" tension={0.45}
+        lineCap="round" lineJoin="round"
       />
       {/* Wire highlight streak */}
-      <Line
-        points={[fromX, fromY, ctrlX, ctrlY - 1, toX, toY]}
+      <Path
+        data={`M ${fromX} ${fromY} Q ${ctrlX} ${ctrlY - 1} ${toX} ${toY}`}
         stroke="rgba(255,255,255,0.18)" strokeWidth={1.5}
-        lineCap="round" lineJoin="round" tension={0.45}
+        lineCap="round" lineJoin="round"
       />
       {/* Endpoint dots */}
       <Circle x={fromX} y={fromY} radius={4.5} fill={color} stroke="rgba(255,255,255,0.7)" strokeWidth={1.5} />

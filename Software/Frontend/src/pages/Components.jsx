@@ -3,6 +3,7 @@ import { Search, TriangleAlert, Bot, X, Loader2, Info, Zap, Puzzle, Link2 } from
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useTranslation } from '../utils/i18n'
+import { apiFetch } from '../utils/apiFetch'
 import './Components.css'
 
 export default function Components() {
@@ -261,7 +262,7 @@ export default function Components() {
     try {
       const token = localStorage.getItem('access_token')
       const API_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api')
-      const response = await fetch(`${API_URL}/library/tutorial-chat`, {
+      const response = await apiFetch(`${API_URL}/library/tutorial-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -273,10 +274,8 @@ export default function Components() {
           history: chatMessages
         })
       })
-      if (response.ok) {
-        const data = await response.json()
-        setChatMessages([...newHistory, { role: 'assistant', content: data.reply }])
-      }
+      const data = await response.json()
+      setChatMessages([...newHistory, { role: 'assistant', content: data.reply }])
     } catch (err) {
       console.error(err)
     } finally {

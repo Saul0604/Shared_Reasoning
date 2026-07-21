@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useTranslation } from '../utils/i18n';
+import { apiFetch } from '../utils/apiFetch';
 import { useNavigate } from 'react-router-dom';
 import { User, Lock, X } from 'lucide-react';
 import useAppStore from '../store/useAppStore';
@@ -266,7 +268,7 @@ export default function Landing() {
       formData.append('username', email);
       formData.append('password', password);
 
-      const response = await fetch(`${backendUrl}/auth/login`, {
+      const response = await apiFetch(`${backendUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -274,25 +276,18 @@ export default function Landing() {
         body: formData,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Error al iniciar sesión');
-      }
-
       const tokenData = await response.json();
       localStorage.setItem('access_token', tokenData.access_token);
 
       // Obtener detalles del usuario actual
-      const userRes = await fetch(`${backendUrl}/auth/me`, {
+      const userRes = await apiFetch(`${backendUrl}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
         },
       });
 
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        setUser(userData);
-      }
+      const userData = await userRes.json();
+      setUser(userData);
 
       setShowLogin(false);
       navigate('/app'); // Redirigir a la app

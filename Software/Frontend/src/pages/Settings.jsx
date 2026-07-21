@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import useChatStore from '../store/useChatStore'
 import { Key, Cpu, Moon, Sun, Globe, Eye, EyeOff, Save, Trash2, CheckCircle, Info } from 'lucide-react'
 import { useTranslation } from '../utils/i18n'
+import TokenModal from '../components/TokenModal'
+import LocalWarningModal from '../components/LocalWarningModal'
 import './Settings.css'
 
 export default function Settings() {
   const { selectedProvider, setProvider, language, setLanguage, darkMode, setDarkMode } = useChatStore()
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   
   // State for API Keys
   const [geminiKey, setGeminiKey] = useState('')
@@ -17,6 +19,10 @@ export default function Settings() {
   // Toast notifications
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+
+  // Token Modal
+  const [pendingModel, setPendingModel] = useState(null)
+  const [showLocalWarning, setShowLocalWarning] = useState(false)
 
   // Load API keys on mount
   useEffect(() => {
@@ -68,13 +74,39 @@ export default function Settings() {
 
   return (
     <div className="settings-page">
-      {/* Toast Alert */}
-      {showToast && (
-        <div className="settings-toast">
-          <CheckCircle size={16} />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      {/* Toast Notification */}
+      <div className={`settings-toast ${showToast ? 'show' : ''}`}>
+        <CheckCircle size={18} />
+        {toastMessage}
+      </div>
+
+      <TokenModal
+        isOpen={!!pendingModel}
+        onClose={() => setPendingModel(null)}
+        onSubmit={(token) => {
+          if (pendingModel) {
+            localStorage.setItem(`user_${pendingModel.providerKey}_api_key`, token);
+            if (pendingModel.providerKey === 'openai') setOpenaiKey(token);
+            else setGeminiKey(token);
+            
+            setProvider(pendingModel.id);
+            triggerToast(t('toastProviderChange', { name: pendingModel.name }));
+            setPendingModel(null);
+          }
+        }}
+        providerName={pendingModel?.providerName}
+        modelName={pendingModel?.name}
+      />
+
+      <LocalWarningModal
+        isOpen={showLocalWarning}
+        onClose={() => setShowLocalWarning(false)}
+        onConfirm={() => {
+          setProvider('local');
+          triggerToast(t('toastProviderChange', { name: 'Servidor Local' }));
+          setShowLocalWarning(false);
+        }}
+      />
 
       {/* Header */}
       <div className="settings-header">
@@ -186,30 +218,74 @@ export default function Settings() {
               </div>
             </div>
 
-            <div className="settings-providers-list">
-              {[
-                { id: 'gemini', name: 'Google Gemini', desc: t('providerGeminiDesc') },
-                { id: 'openai', name: 'OpenAI GPT-4o', desc: t('providerOpenaiDesc') },
-                { id: 'local', name: 'Servidor Local', desc: t('providerLocalDesc') }
-              ].map((provider) => (
+            {/* Helper para renderizar tarjetas de modelos */}
+            {(() => {
+              const renderProvider = (provider) => (
                 <div 
                   key={provider.id} 
-                  className={`settings-provider-card ${selectedProvider === provider.id ? 'active' : ''}`}
+                  className={`settings-provider-card ${selectedProvider === provider.id || (selectedProvider === 'gemini' && provider.id === 'gemini-2.5-flash') || (selectedProvider === 'openai' && provider.id === 'gpt-4o') ? 'active' : ''}`}
                   onClick={() => {
+                    if (!provider.isFree) {
+                      const isOpenAI = provider.id.includes('gpt') || provider.id.includes('o1');
+                      const providerKey = isOpenAI ? 'openai' : 'gemini';
+                      const currentKey = isOpenAI ? openaiKey : geminiKey;
+                      
+                      if (!currentKey) {
+                        const providerName = isOpenAI ? 'OpenAI' : 'Google Gemini';
+                        setPendingModel({ ...provider, providerKey, providerName });
+                        return;
+                      }
+                    } else if (provider.id === 'local') {
+                      setShowLocalWarning(true);
+                      return;
+                    }
                     setProvider(provider.id)
                     triggerToast(t('toastProviderChange', { name: provider.name }))
                   }}
+                  style={{ marginBottom: '8px' }}
                 >
                   <div className="provider-check">
                     <div className="provider-check-circle" />
                   </div>
                   <div>
-                    <h3 className="provider-name">{provider.name}</h3>
-                    <p className="provider-desc">{provider.desc}</p>
+                    <h3 className="provider-name" style={{ fontSize: '13px' }}>{provider.name}</h3>
+                    <p className="provider-desc" style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{provider.desc}</p>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+
+              return (
+                <div className="settings-providers-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                  {/* Columna Gemini */}
+                  <div className="provider-column">
+                    <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Google Gemini</h4>
+                    {[
+                      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', desc: 'Gratis, rápido y eficiente.', isFree: true },
+                      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', desc: 'Avanzado (Requiere API Key).', isFree: false },
+                      { id: 'gemini-2.0-pro-exp-02-05', name: 'Gemini 2.0 Pro', desc: 'Experimental (Requiere API Key).', isFree: false },
+                    ].map(renderProvider)}
+                  </div>
+
+                  {/* Columna OpenAI */}
+                  <div className="provider-column">
+                    <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>OpenAI</h4>
+                    {[
+                      { id: 'gpt-4o', name: 'GPT-4o', desc: 'Gratis, inteligente y multimodal.', isFree: true },
+                      { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', desc: 'Avanzado (Requiere API Key).', isFree: false },
+                      { id: 'o1', name: 'OpenAI o1', desc: 'Razonamiento profundo (Requiere API Key).', isFree: false },
+                    ].map(renderProvider)}
+                  </div>
+
+                  {/* Columna Local */}
+                  <div className="provider-column">
+                    <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Local</h4>
+                    {[
+                      { id: 'local', name: 'Servidor Local', desc: t('providerLocalDesc'), isFree: true }
+                    ].map(renderProvider)}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Preferences Settings */}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Download } from 'lucide-react';
 import useLibraryStore from '../../store/useLibraryStore';
+import { apiFetch } from '../../utils/apiFetch';
 
 export default function PdfViewerModal({ material, onClose }) {
   const [blobUrl, setBlobUrl] = useState(null);
@@ -10,39 +11,9 @@ export default function PdfViewerModal({ material, onClose }) {
   const downloadMaterialAsBlob = useLibraryStore(state => state.downloadMaterialAsBlob);
 
   useEffect(() => {
-    let url = null;
-    const fetchPdf = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        const API_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
-        const res = await fetch(`${API_URL}/library/download/${material.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (!res.ok) {
-          const errText = await res.text();
-          throw new Error(`Error ${res.status}: ${errText}`);
-        }
-
-        const rawBlob = await res.blob();
-        const pdfBlob = new Blob([rawBlob], { type: 'application/pdf' });
-        url = URL.createObjectURL(pdfBlob);
-        setBlobUrl(url);
-      } catch (err) {
-        console.error('Error fetching PDF:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPdf();
-
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
+    const API_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
+    setBlobUrl(`${API_URL}/library/download/${material.id}`);
+    setLoading(false);
   }, [material.id]);
 
   const handleDownload = () => {
