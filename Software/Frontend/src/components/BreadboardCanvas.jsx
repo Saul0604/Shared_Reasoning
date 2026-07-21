@@ -1,5 +1,8 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { Stage, Layer, Rect, Circle, Line, Text, Group, Arc, Path } from 'react-konva'
+import { Eye, Layers } from 'lucide-react'
+import useChatStore from '../store/useChatStore'
+import { useTranslation } from '../utils/i18n'
 import './BreadboardCanvas.css'
 
 // ── CONSTANTS ──
@@ -964,19 +967,47 @@ export default function BreadboardCanvas({ circuit, activeComponentId }) {
     setPosition({ x: (w - BOARD_WIDTH * fitScale) / 2, y: 10 })
   }
 
+  const { currentStep, extractResult, stepRenderMode, setStepRenderMode } = useChatStore()
+  const { t } = useTranslation()
+
+  const steps = extractResult?.project?.assembly_steps ?? []
   const components = circuit?.components ?? []
   const connections = circuit?.connections ?? []
+
+  // Filter components according to stepRenderMode ('highlight' vs 'progressive')
+  const visibleComponents = useMemo(() => {
+    if (stepRenderMode !== 'progressive' || !steps || steps.length === 0) {
+      return components
+    }
+    const visibleStepCompIds = new Set(
+      steps.slice(0, currentStep + 1).map((s) => s.component_id).filter(Boolean)
+    )
+    return components.filter((c) => visibleStepCompIds.has(c.id))
+  }, [components, stepRenderMode, steps, currentStep])
+
+  // Filter connections according to stepRenderMode ('highlight' vs 'progressive')
+  const visibleConnections = useMemo(() => {
+    if (stepRenderMode !== 'progressive' || !steps || steps.length === 0) {
+      return connections
+    }
+    const numComps = components.length
+    if (currentStep < numComps) {
+      return []
+    }
+    const maxWireIndex = currentStep - numComps
+    return connections.slice(0, maxWireIndex + 1)
+  }, [connections, components.length, stepRenderMode, steps, currentStep])
 
   // Legend wire colors
   const wireColors = useMemo(() => {
     const colors = new Map()
-    for (const conn of connections) {
+    for (const conn of visibleConnections) {
       if (conn.wire_color) {
         colors.set(conn.wire_color, resolveWireColor(conn.wire_color))
       }
     }
     return colors
-  }, [connections])
+  }, [visibleConnections])
 
   return (
     <div className="breadboard-wrapper">
@@ -985,8 +1016,57 @@ export default function BreadboardCanvas({ circuit, activeComponentId }) {
         <div className="breadboard-toolbar-group">
           <span className="breadboard-toolbar-label">Protoboard</span>
           <span style={{ fontSize: '11px', color: '#64748b' }}>
-            {components.length} comp · {connections.length} cables
+            {visibleComponents.length}/{components.length} comp · {visibleConnections.length}/{connections.length} cables
           </span>
+
+          {steps.length > 0 && (
+            <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: '8px', padding: '2px', gap: '2px', marginLeft: '12px' }}>
+              <button
+                onClick={() => setStepRenderMode('highlight')}
+                style={{
+                  border: 'none',
+                  background: stepRenderMode === 'highlight' ? '#FFFFFF' : 'transparent',
+                  color: stepRenderMode === 'highlight' ? '#2563EB' : '#64748B',
+                  boxShadow: stepRenderMode === 'highlight' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.15s ease',
+                }}
+                title={t('renderModeHighlight')}
+              >
+                <Eye size={13} />
+                <span>{t('renderModeHighlight')}</span>
+              </button>
+              <button
+                onClick={() => setStepRenderMode('progressive')}
+                style={{
+                  border: 'none',
+                  background: stepRenderMode === 'progressive' ? '#FFFFFF' : 'transparent',
+                  color: stepRenderMode === 'progressive' ? '#2563EB' : '#64748B',
+                  boxShadow: stepRenderMode === 'progressive' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.15s ease',
+                }}
+                title={t('renderModeProgressive')}
+              >
+                <Layers size={13} />
+                <span>{t('renderModeProgressive')}</span>
+              </button>
+            </div>
+          )}
         </div>
         <div className="breadboard-toolbar-group">
           <button className="zoom-btn" onClick={zoomOut} title="Alejar">−</button>
@@ -1018,12 +1098,12 @@ export default function BreadboardCanvas({ circuit, activeComponentId }) {
             <HoleGrid />
 
             {/* Wires (behind components) */}
-            {connections.map((conn, i) => (
+            {visibleConnections.map((conn, i) => (
               <WireConnection key={`wire-${i}`} connection={conn} index={i} />
             ))}
 
             {/* Components (on top) */}
-            {components.map((comp) => (
+            {visibleComponents.map((comp) => (
               <ComponentShape
                 key={comp.id}
                 component={comp}

@@ -33,6 +33,8 @@ const useChatStore = create((set, get) => ({
   // Visual mode
   visualMode: false,
   chatPanelCollapsed: false,
+  stepsPanelCollapsed: false,
+  stepRenderMode: 'highlight', // 'highlight' | 'progressive'
   chatViewMode: 'history', // 'new_chat' | 'history'
 
   // Circuit / extract data
@@ -51,6 +53,9 @@ const useChatStore = create((set, get) => ({
   // Actions
   toggleChatPanel: () => set((s) => ({ chatPanelCollapsed: !s.chatPanelCollapsed })),
   setChatPanelCollapsed: (v) => set({ chatPanelCollapsed: v }),
+  toggleStepsPanel: () => set((s) => ({ stepsPanelCollapsed: !s.stepsPanelCollapsed })),
+  setStepsPanelCollapsed: (v) => set({ stepsPanelCollapsed: v }),
+  setStepRenderMode: (mode) => set({ stepRenderMode: mode }),
   setCurrentStep: (step) => set({ currentStep: step }),
   setProvider: (provider) => {
     localStorage.setItem('selected_provider', provider)

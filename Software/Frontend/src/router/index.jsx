@@ -7,7 +7,6 @@ import Proyectos from '../pages/Proyectos'
 import Library from '../pages/Library'
 import Components from '../pages/Components'
 import Retos from '../pages/Retos'
-import Classes from '../pages/Classes'
 import Settings from '../pages/Settings'
 import Profile from '../pages/Profile'
 import Help from '../pages/Help'
@@ -45,7 +44,6 @@ const router = createBrowserRouter([
           { path: 'components', element: <Components /> },
           { path: 'retos', element: <Retos /> },
           { path: 'retos/diario', element: <RetoDiario /> },
-          { path: 'classes', element: <Classes /> },
           { path: 'settings', element: <Settings /> },
           { path: 'profile', element: <Profile /> },
           { path: 'help', element: <Help /> },
