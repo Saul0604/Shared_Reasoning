@@ -4,6 +4,7 @@ import { Star, Lightbulb, Loader2, Flame } from 'lucide-react'
 import useChatStore from '../store/useChatStore'
 import useStreakStore from '../store/useStreakStore'
 import { useTranslation } from '../utils/i18n'
+import { apiFetch } from '../utils/apiFetch'
 import './RetoDiario.css'
 
 export default function RetoDiario() {
@@ -33,16 +34,14 @@ export default function RetoDiario() {
         const token = localStorage.getItem('access_token')
         const API_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api')
         
-        const response = await fetch(`${API_URL}/challenges/daily?lang=${lang}`, {
+        const response = await apiFetch(`${API_URL}/challenges/daily?lang=${lang}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         })
         
-        if (response.ok) {
-          const data = await response.json()
-          setChallenge(data)
-        }
+        const data = await response.json()
+        setChallenge(data)
       } catch (err) {
         console.error("Error cargando reto:", err)
       } finally {

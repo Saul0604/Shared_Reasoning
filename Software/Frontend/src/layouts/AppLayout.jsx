@@ -7,7 +7,6 @@ import {
   Layers,
   FolderOpen,
   FlaskConical,
-  GraduationCap,
   Settings,
   User,
   HelpCircle,
@@ -24,7 +23,6 @@ const navItems = [
   { to: '/app/library', key: 'navLibreria', icon: <BookOpen size={20} /> },
   { to: '/app/proyectos', key: 'navProyectos', icon: <FolderOpen size={20} /> },
   { to: '/app/components', key: 'navComponentes', icon: <Layers size={20} /> },
-  { to: '/app/classes', key: 'navClases', icon: <GraduationCap size={20} /> },
 ]
 
 export default function AppLayout() {

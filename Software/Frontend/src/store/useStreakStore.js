@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { apiFetch } from '../utils/apiFetch'
 
 const API_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000'
 
@@ -26,13 +27,9 @@ const useStreakStore = create((set, get) => ({
 
     set({ streakLoading: true, streakError: null })
     try {
-      const res = await fetch(`${API_URL}/challenges/streak`, { headers })
-      if (res.ok) {
-        const data = await res.json()
-        set({ streak: data })
-      } else {
-        console.error('Error loading streak:', res.status)
-      }
+      const res = await apiFetch(`${API_URL}/challenges/streak`, { headers })
+      const data = await res.json()
+      set({ streak: data })
     } catch (err) {
       console.error('Error loading streak:', err)
       set({ streakError: err.message })
@@ -47,7 +44,7 @@ const useStreakStore = create((set, get) => ({
     if (!headers.Authorization) return null
 
     try {
-      const res = await fetch(`${API_URL}/challenges/complete`, {
+      const res = await apiFetch(`${API_URL}/challenges/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,19 +57,15 @@ const useStreakStore = create((set, get) => ({
         }),
       })
 
-      if (res.ok) {
-        const data = await res.json()
-        set({ streak: data })
-        return data
-      } else if (res.status === 409) {
+      const data = await res.json()
+      set({ streak: data })
+      return data
+    } catch (err) {
+      if (err.status === 409) {
         // Already completed today — just reload streak
         await get().loadStreak()
         return get().streak
-      } else {
-        console.error('Error completing challenge:', res.status)
-        return null
       }
-    } catch (err) {
       console.error('Error completing challenge:', err)
       return null
     }
@@ -93,13 +86,9 @@ const useStreakStore = create((set, get) => ({
 
     set({ weeklyLoading: true })
     try {
-      const res = await fetch(`${API_URL}/challenges/weekly-progress`, { headers })
-      if (res.ok) {
-        const data = await res.json()
-        set({ weeklyProgress: data })
-      } else {
-        console.error('Error loading weekly progress:', res.status)
-      }
+      const res = await apiFetch(`${API_URL}/challenges/weekly-progress`, { headers })
+      const data = await res.json()
+      set({ weeklyProgress: data })
     } catch (err) {
       console.error('Error loading weekly progress:', err)
     } finally {

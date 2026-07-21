@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { apiFetch } from '../utils/apiFetch'
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api')
 
@@ -20,12 +21,11 @@ const useLibraryStore = create((set, get) => ({
         url += `?${params.toString()}`
       }
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
-      if (!res.ok) throw new Error('Error al cargar materiales')
       const data = await res.json()
       set({ materials: data })
     } catch (err) {
@@ -39,17 +39,13 @@ const useLibraryStore = create((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const token = localStorage.getItem('access_token')
-      const res = await fetch(`${API_URL}/library/upload`, {
+      const res = await apiFetch(`${API_URL}/library/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         },
         body: formData
       })
-      if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.detail || 'Error al subir material')
-      }
       const newMaterial = await res.json()
       set(state => ({ materials: [newMaterial, ...state.materials] }))
       return newMaterial
@@ -65,12 +61,11 @@ const useLibraryStore = create((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const token = localStorage.getItem('access_token')
-      const res = await fetch(`${API_URL}/library/download/${id}`, {
+      const res = await apiFetch(`${API_URL}/library/download/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
-      if (!res.ok) throw new Error('Error al descargar')
       
       const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)

@@ -642,10 +642,61 @@
 
 /* Visual Content Body */
 .visual-panel__body {
-  padding: 32px;
+  padding: 24px 32px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  flex: 1;
+}
+
+.visual-panel__layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.visual-panel__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.visual-panel__sidebar {
+  width: 360px;
+  flex-shrink: 0;
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 170px);
+  position: sticky;
+  top: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.visual-panel__step-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #F9FAFB;
+  border-top: 1px solid #E5E7EB;
+  gap: 12px;
+}
+
+@media (max-width: 1024px) {
+  .visual-panel__layout {
+    flex-direction: column;
+  }
+  .visual-panel__sidebar {
+    width: 100%;
+    position: static;
+    height: 480px;
+  }
 }
 
 /* Protoboard Section */

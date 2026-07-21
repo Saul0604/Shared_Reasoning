@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Check, User, Lock, Mail } from 'lucide-react'
+import { useTranslation } from '../utils/i18n'
+import { apiFetch } from '../utils/apiFetch'
 import useAppStore from '../store/useAppStore'
 import './Survey.css'
 
@@ -252,7 +254,7 @@ export default function Survey() {
 
     try {
       // 1. Register user
-      const registerRes = await fetch(`${backendUrl}/auth/register`, {
+      const registerRes = await apiFetch(`${backendUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -262,38 +264,27 @@ export default function Survey() {
         }),
       })
 
-      if (!registerRes.ok) {
-        const errData = await registerRes.json().catch(() => ({}))
-        throw new Error(errData.detail || 'Error al registrar la cuenta')
-      }
-
       // 2. Auto-login
       const loginForm = new URLSearchParams()
       loginForm.append('username', regEmail)
       loginForm.append('password', regPassword)
 
-      const loginRes = await fetch(`${backendUrl}/auth/login`, {
+      const loginRes = await apiFetch(`${backendUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: loginForm,
       })
 
-      if (!loginRes.ok) {
-        throw new Error('Cuenta creada, pero falló el login automático. Intenta iniciar sesión manualmente.')
-      }
-
       const tokenData = await loginRes.json()
       localStorage.setItem('access_token', tokenData.access_token)
 
       // 3. Get user profile
-      const userRes = await fetch(`${backendUrl}/auth/me`, {
+      const userRes = await apiFetch(`${backendUrl}/auth/me`, {
         headers: { Authorization: `Bearer ${tokenData.access_token}` },
       })
 
-      if (userRes.ok) {
-        const userData = await userRes.json()
-        setUser(userData)
-      }
+      const userData = await userRes.json()
+      setUser(userData)
 
       // 4. Proceed to questions
       setCurrentPage(1)
@@ -323,7 +314,7 @@ export default function Survey() {
       try {
         const token = localStorage.getItem('access_token')
         if (token) {
-          await fetch(`${backendUrl}/auth/profile`, {
+          await apiFetch(`${backendUrl}/auth/profile`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
@@ -637,10 +628,10 @@ export default function Survey() {
             {currentPage === 0
               ? (regLoading ? 'Creando cuenta...' : 'Crear cuenta')
               : saving
-              ? 'Guardando...'
-              : currentPage === TOTAL_PAGES - 1
-              ? 'Finalizar'
-              : 'Siguiente'}
+                ? 'Guardando...'
+                : currentPage === TOTAL_PAGES - 1
+                  ? 'Finalizar'
+                  : 'Siguiente'}
             {!saving && !regLoading && <ArrowRight size={16} />}
           </button>
         </div>

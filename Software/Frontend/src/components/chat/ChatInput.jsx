@@ -1,17 +1,25 @@
 import { useState, useRef, useEffect } from 'react'
 import useChatStore from '../../store/useChatStore'
 import { useTranslation } from '../../utils/i18n'
+import TokenModal from '../TokenModal'
+import LocalWarningModal from '../LocalWarningModal'
 
 const MODEL_OPTIONS = [
-  { value: 'gemini', label: 'Gemini 2.5' },
-  { value: 'openai', label: 'GPT-4o' },
-  { value: 'local', label: 'Local' },
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', isFree: true },
+  { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', isFree: false },
+  { value: 'gemini-2.0-pro-exp-02-05', label: 'Gemini 2.0 Pro', isFree: false },
+  { value: 'gpt-4o', label: 'GPT-4o', isFree: true },
+  { value: 'gpt-4-turbo', label: 'GPT-4 Turbo', isFree: false },
+  { value: 'o1', label: 'OpenAI o1', isFree: false },
+  { value: 'local', label: 'Local', isFree: true },
 ]
 
 export default function ChatInput({ onSend, isLoading, compact = false }) {
   const [text, setText] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const [modelMenuOpen, setModelMenuOpen] = useState(false)
+  const [pendingModel, setPendingModel] = useState(null)
+  const [showLocalWarning, setShowLocalWarning] = useState(false)
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const fileInputRef = useRef(null)
@@ -22,7 +30,14 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
   const setProvider = useChatStore((s) => s.setProvider)
   const { t, lang } = useTranslation()
 
-  const currentModel = MODEL_OPTIONS.find((m) => m.value === selectedProvider) || MODEL_OPTIONS[0]
+  // Find model or fallback to first option
+  let currentModel = MODEL_OPTIONS.find((m) => m.value === selectedProvider)
+  if (!currentModel) {
+    // Para compatibilidad hacia atrás si tenían 'gemini' u 'openai'
+    if (selectedProvider === 'gemini') currentModel = MODEL_OPTIONS[0];
+    else if (selectedProvider === 'openai') currentModel = MODEL_OPTIONS[3];
+    else currentModel = MODEL_OPTIONS[0];
+  }
 
   // Close menus on outside click
   useEffect(() => {
@@ -196,22 +211,55 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
           </button>
 
           {modelMenuOpen && (
-            <div className="chat-input__model-menu">
-              {MODEL_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className={`chat-input__model-option ${selectedProvider === opt.value ? 'chat-input__model-option--active' : ''}`}
-                  onClick={() => {
-                    setProvider(opt.value)
-                    setModelMenuOpen(false)
-                  }}
-                >
-                  <span className="chat-input__model-dot" />
-                  {opt.label}
-                  {selectedProvider === opt.value && <span className="chat-input__model-check">✓</span>}
-                </button>
-              ))}
+            <div className="chat-input__model-menu" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', padding: '12px', minWidth: '400px', right: '0' }}>
+              {(() => {
+                const renderOption = (opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className={`chat-input__model-option ${selectedProvider === opt.value || (selectedProvider === 'gemini' && opt.value === 'gemini-2.5-flash') || (selectedProvider === 'openai' && opt.value === 'gpt-4o') ? 'chat-input__model-option--active' : ''}`}
+                    onClick={() => {
+                      if (!opt.isFree) {
+                        const isOpenAI = opt.value.includes('gpt') || opt.value.includes('o1');
+                        const providerKey = isOpenAI ? 'openai' : 'gemini';
+                        
+                        if (!localStorage.getItem(`user_${providerKey}_api_key`)) {
+                          const providerName = isOpenAI ? 'OpenAI' : 'Google Gemini';
+                          setPendingModel({ ...opt, providerKey, providerName });
+                          return;
+                        }
+                      } else if (opt.value === 'local') {
+                        setShowLocalWarning(true);
+                        return;
+                      }
+                      
+                      setProvider(opt.value)
+                      setModelMenuOpen(false)
+                    }}
+                  >
+                    <span className="chat-input__model-dot" />
+                    {opt.label}
+                    {(selectedProvider === opt.value || (selectedProvider === 'gemini' && opt.value === 'gemini-2.5-flash') || (selectedProvider === 'openai' && opt.value === 'gpt-4o')) && <span className="chat-input__model-check">✓</span>}
+                  </button>
+                );
+
+                return (
+                  <>
+                    <div className="model-menu-column">
+                      <div className="model-menu-title" style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Google Gemini</div>
+                      {MODEL_OPTIONS.filter(m => m.value.includes('gemini')).map(renderOption)}
+                    </div>
+                    <div className="model-menu-column">
+                      <div className="model-menu-title" style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>OpenAI</div>
+                      {MODEL_OPTIONS.filter(m => m.value.includes('gpt') || m.value.includes('o1')).map(renderOption)}
+                    </div>
+                    <div className="model-menu-column">
+                      <div className="model-menu-title" style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Local</div>
+                      {MODEL_OPTIONS.filter(m => m.value === 'local').map(renderOption)}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -230,6 +278,31 @@ export default function ChatInput({ onSend, isLoading, compact = false }) {
           ? 'Elektra puede cometer errores en cálculos complejos. Verifica tus diagramas antes de ensamblar.'
           : 'Elektra can make mistakes. Verify your circuit diagrams before assembly.'}
       </p>
+
+      <TokenModal
+        isOpen={!!pendingModel}
+        onClose={() => setPendingModel(null)}
+        onSubmit={(token) => {
+          if (pendingModel) {
+            localStorage.setItem(`user_${pendingModel.providerKey}_api_key`, token);
+            setProvider(pendingModel.value);
+            setPendingModel(null);
+            setModelMenuOpen(false);
+          }
+        }}
+        providerName={pendingModel?.providerName}
+        modelName={pendingModel?.label}
+      />
+      
+      <LocalWarningModal
+        isOpen={showLocalWarning}
+        onClose={() => setShowLocalWarning(false)}
+        onConfirm={() => {
+          setProvider('local');
+          setShowLocalWarning(false);
+          setModelMenuOpen(false);
+        }}
+      />
     </div>
   )
 }

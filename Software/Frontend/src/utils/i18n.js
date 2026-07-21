@@ -25,8 +25,10 @@ export const translations = {
     coordsColDesc: 'Descripción',
     assemblyStepsTitle: 'Pasos de ensamblaje',
     assemblyStepOf: 'Paso {curr} de {total}',
-    stepPrev: '← Anterior',
-    stepNext: 'Siguiente →',
+    stepPrev: 'Anterior',
+    stepNext: 'Siguiente',
+    renderModeHighlight: 'Marca',
+    renderModeProgressive: 'Paso',
 
     // Settings
     settingsTitle: 'Configuraciones',
@@ -108,8 +110,10 @@ export const translations = {
     coordsColDesc: 'Description',
     assemblyStepsTitle: 'Assembly Steps',
     assemblyStepOf: 'Step {curr} of {total}',
-    stepPrev: '← Previous',
-    stepNext: 'Next →',
+    stepPrev: 'Previous',
+    stepNext: 'Next',
+    renderModeHighlight: 'Highlight',
+    renderModeProgressive: 'Steps',
 
     // Settings
     settingsTitle: 'Settings',

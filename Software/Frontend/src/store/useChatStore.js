@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { apiFetch } from '../utils/apiFetch'
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api')
 
@@ -32,6 +33,8 @@ const useChatStore = create((set, get) => ({
   // Visual mode
   visualMode: false,
   chatPanelCollapsed: false,
+  stepsPanelCollapsed: false,
+  stepRenderMode: 'highlight', // 'highlight' | 'progressive'
   chatViewMode: 'history', // 'new_chat' | 'history'
 
   // Circuit / extract data
@@ -50,6 +53,9 @@ const useChatStore = create((set, get) => ({
   // Actions
   toggleChatPanel: () => set((s) => ({ chatPanelCollapsed: !s.chatPanelCollapsed })),
   setChatPanelCollapsed: (v) => set({ chatPanelCollapsed: v }),
+  toggleStepsPanel: () => set((s) => ({ stepsPanelCollapsed: !s.stepsPanelCollapsed })),
+  setStepsPanelCollapsed: (v) => set({ stepsPanelCollapsed: v }),
+  setStepRenderMode: (mode) => set({ stepRenderMode: mode }),
   setCurrentStep: (step) => set({ currentStep: step }),
   setProvider: (provider) => {
     localStorage.setItem('selected_provider', provider)
@@ -74,7 +80,7 @@ const useChatStore = create((set, get) => ({
       const headers = getAuthHeaders()
       if (!headers.Authorization) return
       
-      const res = await fetch(`${API_URL}/chat/sessions`, { headers })
+      const res = await apiFetch(`${API_URL}/chat/sessions`, { headers })
       if (res.ok) {
         const data = await res.json()
         set({ sessions: data })
@@ -101,7 +107,7 @@ const useChatStore = create((set, get) => ({
           : `data:image/jpeg;base64,${activeSession.schema_image_base64}`
       }
 
-      const res = await fetch(`${API_URL}/chat/sessions/${sessionId}/messages`, { headers })
+      const res = await apiFetch(`${API_URL}/chat/sessions/${sessionId}/messages`, { headers })
       if (res.ok) {
         const data = await res.json()
         
@@ -148,7 +154,7 @@ const useChatStore = create((set, get) => ({
         return
       }
 
-      const res = await fetch(`${API_URL}/chat/sessions`, {
+      const res = await apiFetch(`${API_URL}/chat/sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,7 +191,7 @@ const useChatStore = create((set, get) => ({
   toggleFavorite: async (sessionId) => {
     try {
       const headers = getAuthHeaders()
-      const res = await fetch(`${API_URL}/chat/sessions/${sessionId}/favorite`, {
+      const res = await apiFetch(`${API_URL}/chat/sessions/${sessionId}/favorite`, {
         method: 'PATCH',
         headers
       })
@@ -205,7 +211,7 @@ const useChatStore = create((set, get) => ({
   deleteSession: async (sessionId) => {
     try {
       const headers = getAuthHeaders()
-      const res = await fetch(`${API_URL}/chat/sessions/${sessionId}`, {
+      const res = await apiFetch(`${API_URL}/chat/sessions/${sessionId}`, {
         method: 'DELETE',
         headers
       })
@@ -294,17 +300,13 @@ const useChatStore = create((set, get) => ({
       const extractUrl = provider 
         ? `${API_URL}/extract?provider=${provider}&skill_level=${skillLevel}` 
         : `${API_URL}/extract?skill_level=${skillLevel}`
-      const extractRes = await fetch(extractUrl, {
+      const extractRes = await apiFetch(extractUrl, {
         method: 'POST',
         headers: {
           ...headers
         },
         body: formData,
       })
-
-      if (!extractRes.ok) {
-        throw new Error('No se pudo analizar el esquema.')
-      }
 
       const extractData = await extractRes.json()
 
@@ -321,7 +323,7 @@ const useChatStore = create((set, get) => ({
         ? `${API_URL}/chat/sessions/${sessionId}/message`
         : `${API_URL}/chat`
 
-      const chatRes = await fetch(chatEndpoint, {
+      const chatRes = await apiFetch(chatEndpoint, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -331,9 +333,9 @@ const useChatStore = create((set, get) => ({
       })
 
       let reply = '✅ He analizado tu diagrama. Puedes ver la protoboard generada en el panel visual.'
-      if (chatRes.ok) {
-        const chatData = await chatRes.json()
-        reply = chatData.reply
+      const chatData = await chatRes.json()
+      if (chatData && chatData.reply) {
+         reply = chatData.reply
       }
 
       const assistantMsg = { role: 'assistant', content: reply, timestamp: Date.now() }
@@ -394,7 +396,7 @@ const useChatStore = create((set, get) => ({
         ? `${API_URL}/chat/sessions/${sessionId}/message`
         : `${API_URL}/chat`
 
-      const res = await fetch(chatEndpoint, {
+      const res = await apiFetch(chatEndpoint, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -409,8 +411,6 @@ const useChatStore = create((set, get) => ({
           skill_level: get().user?.skill_level || null,
         }),
       })
-
-      if (!res.ok) throw new Error('Error en la respuesta del servidor')
 
       const data = await res.json()
       const assistantMsg = { role: 'assistant', content: data.reply, timestamp: Date.now() }
@@ -428,7 +428,7 @@ const useChatStore = create((set, get) => ({
       console.error('Chat error:', err)
       const errorMsg = {
         role: 'assistant',
-        content: '⚠️ Hubo un error al conectar con el servidor. Intenta de nuevo.',
+        content: `⚠️ ${err.message || 'Hubo un error al conectar con el servidor. Intenta de nuevo.'}`,
         timestamp: Date.now(),
       }
       set({ messages: [...get().messages, errorMsg], isChatTyping: false })
@@ -448,7 +448,7 @@ const useChatStore = create((set, get) => ({
       const headers = getAuthHeaders()
       if (!headers.Authorization) return
       
-      const res = await fetch(`${API_URL}/auth/me`, { headers })
+      const res = await apiFetch(`${API_URL}/auth/me`, { headers })
       if (res.ok) {
         const userData = await res.json()
         set({ user: userData })
@@ -463,7 +463,7 @@ const useChatStore = create((set, get) => ({
       const headers = getAuthHeaders()
       if (!headers.Authorization) return
       
-      const res = await fetch(`${API_URL}/auth/profile`, {
+      const res = await apiFetch(`${API_URL}/auth/profile`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -493,7 +493,7 @@ const useChatStore = create((set, get) => ({
       const headers = getAuthHeaders()
       if (!headers.Authorization) return
       
-      const res = await fetch(`${API_URL}/share/received`, { headers })
+      const res = await apiFetch(`${API_URL}/share/received`, { headers })
       if (res.ok) {
         const data = await res.json()
         set({ sharedSessions: data })
@@ -508,7 +508,7 @@ const useChatStore = create((set, get) => ({
       const headers = getAuthHeaders()
       if (!headers.Authorization) return null
       
-      const res = await fetch(`${API_URL}/share/sessions/${chatId}`, {
+      const res = await apiFetch(`${API_URL}/share/sessions/${chatId}`, {
         method: 'POST',
         headers
       })
@@ -529,7 +529,7 @@ const useChatStore = create((set, get) => ({
       const headers = getAuthHeaders()
       if (!headers.Authorization) return null
       
-      const res = await fetch(`${API_URL}/share/resolve/${token}`, {
+      const res = await apiFetch(`${API_URL}/share/resolve/${token}`, {
         method: 'POST',
         headers
       })
@@ -551,7 +551,7 @@ const useChatStore = create((set, get) => ({
       const headers = getAuthHeaders()
       if (!headers.Authorization) return false
       
-      const res = await fetch(`${API_URL}/chat/sessions/${chatId}/title`, {
+      const res = await apiFetch(`${API_URL}/chat/sessions/${chatId}/title`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -580,7 +580,7 @@ const useChatStore = create((set, get) => ({
       const headers = getAuthHeaders()
       if (!headers.Authorization) return
       
-      const res = await fetch(`${API_URL}/chat/sessions?include_archived=true`, { headers })
+      const res = await apiFetch(`${API_URL}/chat/sessions?include_archived=true`, { headers })
       if (res.ok) {
         const data = await res.json()
         set({ archivedSessions: data })
@@ -595,7 +595,7 @@ const useChatStore = create((set, get) => ({
       const headers = getAuthHeaders()
       if (!headers.Authorization) return false
       
-      const res = await fetch(`${API_URL}/chat/sessions/${chatId}/archive`, {
+      const res = await apiFetch(`${API_URL}/chat/sessions/${chatId}/archive`, {
         method: 'PATCH',
         headers
       })
