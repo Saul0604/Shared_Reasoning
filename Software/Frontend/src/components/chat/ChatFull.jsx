@@ -89,6 +89,8 @@ export default function ChatFull() {
     if (token) {
       loadSharedProjects()
     }
+  }, [token])
+
   const handleShareClick = async (e, chatId) => {
     e.stopPropagation()
     const link = await generateShareLink(chatId)
