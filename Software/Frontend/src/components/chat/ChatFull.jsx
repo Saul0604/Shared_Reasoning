@@ -3,6 +3,7 @@ import useChatStore from '../../store/useChatStore'
 import ChatInput from './ChatInput'
 import MarkdownBubble from './MarkdownBubble'
 import { useTranslation } from '../../utils/i18n'
+import { copyToClipboard } from '../../utils/copyToClipboard'
 import { Cpu, Route, Zap, CircuitBoard, Share2, Clipboard, Edit, Loader2, Archive } from 'lucide-react'
 
 const getSuggestions = (lang) => [
@@ -88,13 +89,11 @@ export default function ChatFull() {
     if (token) {
       loadSharedProjects()
     }
-  }, [token])
-
   const handleShareClick = async (e, chatId) => {
     e.stopPropagation()
     const link = await generateShareLink(chatId)
     if (link) {
-      navigator.clipboard.writeText(link)
+      await copyToClipboard(link)
       setToastMessage(lang === 'es' ? '¡Enlace de compartición copiado al portapapeles! 🔗' : 'Share link copied to clipboard! 🔗')
       setTimeout(() => setToastMessage(null), 3000)
     }

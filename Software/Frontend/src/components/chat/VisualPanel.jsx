@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import useChatStore from '../../store/useChatStore'
 import BreadboardCanvas from '../BreadboardCanvas'
 import { Share2, MoreHorizontal, MessageSquare, Cpu, MapPin, ClipboardList, Copy, Loader2, RefreshCw, Maximize2, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { copyToClipboard } from '../../utils/copyToClipboard'
 import { useTranslation } from '../../utils/i18n'
 
 export default function VisualPanel() {
@@ -195,7 +196,7 @@ export default function VisualPanel() {
                         const pos = c.pins ? c.pins.map(p => p.position).filter(Boolean).join(' → ') : '';
                         return `${c.type || c.id}: ${pos}`
                       }).join('\n')
-                      navigator.clipboard.writeText(text)
+                      copyToClipboard(text)
                     }}>
                       <Copy size={13} style={{ marginRight: '6px' }} />
                       {t('coordsCopyBtn')}
