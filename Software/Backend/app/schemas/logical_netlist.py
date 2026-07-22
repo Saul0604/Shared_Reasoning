@@ -16,5 +16,6 @@ class LogicalNet(BaseModel):
     name: Optional[str] = Field(None, description="Nombre amigable opcional de la red")
 
 class LogicalNetlist(BaseModel):
+    analysis: str = Field(description="Explicación detallada paso a paso trazando cada línea desde la fuente a través de los nodos y componentes, antes de generar las listas.")
     components: List[LogicalComponent] = Field(description="Lista de componentes identificados en el circuito")
     nets: List[LogicalNet] = Field(description="Lista de redes o nodos eléctricos de interconexión")

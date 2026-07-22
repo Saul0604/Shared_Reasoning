@@ -5,6 +5,8 @@ Soporta Gemini, OpenAI y modelos locales (Ollama/LM Studio).
 """
 import base64
 import json
+import os
+import time
 import contextvars
 
 # Request-scoped custom API keys for users
@@ -15,6 +17,25 @@ from app.core.config import settings
 from app.schemas.project import Project
 from app.schemas.verification import Verification
 from app.schemas.logical_netlist import LogicalNetlist
+
+# Activar/desactivar el paso de verificación de nets (segundo LLM call).
+# Poner en True para mayor precisión, False para ahorrar quota.
+ENABLE_NETLIST_VERIFY = os.environ.get("ENABLE_NETLIST_VERIFY", "true").lower() in ("true", "1", "yes")
+
+NETLIST_VERIFY_PROMPT = (
+    "Eres un verificador experto de netlists de circuitos eléctricos.\n\n"
+    "Se te proporciona una imagen de un circuito y una netlist extraída previamente por otra IA. "
+    "Tu tarea es VERIFICAR si los nets (nodos eléctricos) están correctamente asignados.\n\n"
+    "ERROR COMÚN A BUSCAR: Dos nets que en realidad son el MISMO conductor continuo "
+    "(unidos por un cable directo SIN ningún componente entre ellos) pero que fueron separados incorrectamente. "
+    "Esto ocurre frecuentemente cuando un cable vertical u horizontal conecta un riel con un nodo de junction.\n\n"
+    "INSTRUCCIONES:\n"
+    "1. Mira la imagen del circuito.\n"
+    "2. Para CADA par de nets en la netlist, pregúntate: '¿Hay un cable directo (sin componente) entre algún pin del Net X y algún pin del Net Y?'\n"
+    "3. Si encuentras nets que deben fusionarse, fusiónalos: mueve todos los pines al net que tenga el nombre más apropiado y elimina el net sobrante.\n"
+    "4. Devuelve la netlist CORREGIDA con el campo 'analysis' explicando qué nets fusionaste y por qué (o indicando que no hubo cambios).\n"
+    "5. NO modifiques los componentes, solo corrige las asignaciones de nets.\n\n"
+)
 
 
 # ============================================================
@@ -59,14 +80,24 @@ EXTRACT_PROJECT_PROMPT = (
 EXTRACT_NETLIST_PROMPT = (
     "Analiza esta imagen del circuito en protoboard o diagrama esquemático.\n\n"
     "Tu tarea consiste en extraer la representación lógica (Netlist) del circuito:\n\n"
+    "=== PASO 0: ANÁLISIS DETALLADO (CAMPO 'analysis') ===\n"
+    "Antes de generar las listas, DEBES escribir un análisis profundo paso a paso en el campo 'analysis'. "
+    "Inicia en el polo positivo de la fuente, traza la línea identificando con qué componentes se conecta directamente (creando el primer nodo). "
+    "Presta MUCHA atención a los cruces y uniones (puntos donde 3 o más líneas se unen). "
+    "Sigue las ramas para descubrir todos los nodos hasta llegar al polo negativo. Piensa en voz alta para no cometer errores en la topología.\n"
+    "ERROR FRECUENTE A EVITAR: Cuando un cable vertical u horizontal conecta directamente un riel (ej. la barra superior) con un nodo central de junction, "
+    "ese cable NO crea un nodo nuevo. Ambos extremos del cable son el MISMO net. "
+    "Si puedes recorrer el cable de un punto a otro SIN atravesar ningún componente, son el mismo nodo eléctrico.\n\n"
     "=== PASO 1: IDENTIFICAR COMPONENTES ===\n"
     "Identifica todos los componentes: resistencias, LEDs, capacitores, transistores, baterías, etc. "
-    "Para cada uno especifica id único (ej. R1, LED1, B1), tipo y valor.\n\n"
+    "Para cada uno especifica id único (ej. R1, LED1, V1), tipo y valor.\n"
+    "REGLA DE ORO: ¡NO INVENTES NINGÚN COMPONENTE! Extrae ÚNICAMENTE los que ves explícitamente en la imagen. Revisa dos veces para asegurarte de que no estás alucinando resistencias extras.\n\n"
     "Pines estándar por tipo:\n"
     "- LEDs/Diodos: ['anode', 'cathode']\n"
     "- Resistencias/Interruptores: ['pin1', 'pin2']\n"
     "- Transistores: ['emitter', 'base', 'collector']\n"
     "- Baterías/Fuentes: type='battery' (NUNCA uses voltage_source), pines: ['positive', 'negative']\n\n"
+    "REGLA CRÍTICA PARA FUENTES DE PODER: Si el diagrama muestra nodos de VCC, VDD, 5V, 9V o similares, y un nodo de Tierra (GND), DEBES INFERIR E INCLUIR un componente tipo 'battery' (ej. id='B1') en la lista de componentes, incluso si no hay una batería dibujada físicamente. El pin 'positive' de esta batería corresponde al nodo VCC, y el pin 'negative' corresponde al nodo GND.\n\n"
     "=== PASO 2: TRAZAR CADA CABLE/LÍNEA ===\n"
     "Sigue CADA línea/cable del esquemático desde un terminal de componente hasta otro. "
     "DEBES extraer todas las conexiones. Un circuito con 0 conexiones es un error grave. "
@@ -75,24 +106,25 @@ EXTRACT_NETLIST_PROMPT = (
     "Un NODO (net) es un punto conductor donde 2 o más pines de componentes se encuentran.\n\n"
     "REGLAS CRÍTICAS para asignar nets:\n"
     "1. TRAZA CADA LÍNEA: Sigue cada cable/línea del diagrama desde su origen hasta su destino. "
-    "Dos pines están en la misma net SOLO si hay un camino conductor directo entre ellos SIN pasar por otro componente.\n"
+    "Dos pines están en la misma net SÓLO si hay un camino conductor directo entre ellos SIN pasar por otro componente.\n"
     "2. JUNCTIONS (NODOS DE 3+ CONEXIONES): Si ves un punto donde 3 o más líneas se cruzan/unen "
-    "(representado a menudo por un punto negro ● o una intersección en T), TODOS esos pines comparten la misma net. "
+    "(representado a menudo por un punto negro o una intersección en T), TODOS esos pines comparten la misma net. "
     "Este tipo de nodo es MUY IMPORTANTE y no debe dividirse en nets separadas.\n"
     "3. NO AGRUPES PINES INCORRECTAMENTE: El hecho de que dos componentes tengan funciones similares "
     "(ej. dos resistencias) NO significa que sus pines estén en la misma net. "
     "Solo comparten net si hay una línea conductora directa entre ellos.\n"
     "4. CADA COMPONENTE SEPARA NETS: La corriente que entra por un pin de un componente sale por otro pin. "
-    "Los pines de un mismo componente NUNCA están en la misma net (eso sería un cortocircuito).\n\n"
-    "=== EJEMPLO ===\n"
-    "Para un circuito: V+ -> R1 -> LED1 -> [nodo] -> R2 -> GND, y también [nodo] -> LED2 -> GND:\n"
-    "- Net_VCC: B1.positive, R1.pin1\n"
-    "- Net_A: R1.pin2, LED1.anode\n"
-    "- Net_X: LED1.cathode, R2.pin1, LED2.anode  (¡junction de 3 pines!)\n"
-    "- Net_GND: B1.negative, R2.pin2, LED2.cathode\n\n"
+    "Los pines de un mismo componente NUNCA están en la misma net (eso sería un cortocircuito).\n"
+    "5. CONDUCTORES CONTINUOS NO SE DIVIDEN: Una línea conductora, sin importar si dobla, tiene intersecciones en T, o se alarga por todo el esquema, es UN SOLO NET. "
+    "NUNCA dividas un conductor continuo en múltiples nets a menos que un componente lo interrumpa. Si dos cables están unidos directamente, forman exactamente el mismo nodo.\n\n"
+    "=== PASO 4: VERIFICACIÓN DE FUSIÓN DE NETS ===\n"
+    "Antes de dar tu respuesta final, revisa CADA par de nets que hayas creado y pregúntate: "
+    "'¿Existe un cable directo (sin componente) que conecte un pin del Net X con un pin del Net Y?' "
+    "Si la respuesta es SÍ, fusiona ambos nets en uno solo. Repite hasta que no queden nets fusionables.\n\n"
     "IMPORTANTE: No te preocupes por posiciones físicas. "
     "Solo concéntrate en la conectividad eléctrica lógica del circuito."
 )
+
 
 VERIFY_STEP_PROMPT_TEMPLATE = (
     "Analiza esta foto de la protoboard. Verifica si el usuario ha ensamblado correctamente el paso {step_number} de su circuito. "
@@ -116,7 +148,7 @@ class GeminiProvider:
         self._types = types
         key = api_key or settings.GEMINI_API_KEY
         self.client = genai.Client(api_key=key)
-        self.model_name = "gemini-2.5-flash"
+        self.model_name = getattr(self, "model_name", None) or "gemini-2.5-flash"
 
     def extract_project_from_image(self, base64_image: str) -> Project:
         if "," in base64_image:
@@ -254,7 +286,9 @@ class OpenAIProvider:
     def __init__(self, api_key: str = None):
         from openai import OpenAI
         key = api_key or settings.OPENAI_API_KEY
-        self.client = OpenAI(api_key=key)
+        if not key or key.strip() == "":
+            raise ValueError("No se configuró una clave de API para OpenAI (OPENAI_API_KEY). Agrégala en el panel de Configuración.")
+        self.client = OpenAI(api_key=key, timeout=60.0, max_retries=3)
         self.model_name = "gpt-4o"
 
     def _image_content(self, base64_image: str):
@@ -443,47 +477,58 @@ _provider_cache: dict = {}
 def get_ai_service(provider: str = None):
     """
     Retorna la instancia del proveedor de IA solicitado.
-    Cachea las instancias para no recrear clientes en cada request (excepto cuando hay keys del usuario).
+    Ahora `provider` puede ser un string del modelo (ej. 'gpt-4-turbo', 'gemini-1.5-pro').
     """
     if provider is None:
-        provider = settings.MODEL_PROVIDER or "gemini"
+        provider = settings.MODEL_PROVIDER or "gemini-2.5-flash"
 
-    provider = provider.lower().strip()
+    model_string = provider.lower().strip()
+
+    if "gemini" in model_string:
+        real_provider = "gemini"
+        model_name = model_string if model_string != "gemini" else "gemini-2.5-flash"
+    elif "gpt" in model_string or "o1" in model_string or "openai" in model_string:
+        real_provider = "openai"
+        model_name = model_string if model_string != "openai" else "gpt-4o"
+    elif model_string == "local":
+        real_provider = "local"
+        model_name = "local"
+    else:
+        real_provider = "gemini"
+        model_name = "gemini-2.5-flash"
 
     # Read from contextvars for user-provided custom API keys
     user_gemini_key = user_gemini_key_var.get()
     user_openai_key = user_openai_key_var.get()
 
     print("==================================================")
-    print(f"[AI Service API Keys Check] Provider: {provider}")
+    print(f"[AI Service API Keys Check] Provider: {real_provider} | Model: {model_name}")
     print(f"  - Default Gemini Key: {settings.GEMINI_API_KEY}")
     print(f"  - Default OpenAI Key: {settings.OPENAI_API_KEY}")
     print(f"  - User Gemini Key:    {user_gemini_key}")
     print(f"  - User OpenAI Key:    {user_openai_key}")
     print("==================================================")
 
-    if provider == "gemini" and user_gemini_key:
-        print("[AI Service] Usando API key de Gemini proporcionada por el usuario")
-        return GeminiProvider(api_key=user_gemini_key)
-    elif provider == "openai" and user_openai_key:
-        print("[AI Service] Usando API key de OpenAI proporcionada por el usuario")
-        return OpenAIProvider(api_key=user_openai_key)
-
-    if provider in _provider_cache:
-        return _provider_cache[provider]
-
-    if provider == "gemini":
-        instance = GeminiProvider()
-    elif provider == "openai":
-        instance = OpenAIProvider()
-    elif provider == "local":
-        instance = LocalProvider()
+    if real_provider == "gemini":
+        if user_gemini_key:
+            print("[AI Service] Usando API key de Gemini proporcionada por el usuario")
+            instance = GeminiProvider(api_key=user_gemini_key)
+        else:
+            instance = GeminiProvider()
+        instance.model_name = model_name
+        return instance
+    elif real_provider == "openai":
+        if user_openai_key:
+            print("[AI Service] Usando API key de OpenAI proporcionada por el usuario")
+            instance = OpenAIProvider(api_key=user_openai_key)
+        else:
+            instance = OpenAIProvider()
+        instance.model_name = model_name
+        return instance
+    elif real_provider == "local":
+        return LocalProvider()
     else:
-        raise ValueError(f"Proveedor de IA no reconocido: '{provider}'. Usa 'gemini', 'openai' o 'local'.")
-
-    _provider_cache[provider] = instance
-    print(f"[AI Service] Inicializado proveedor: {provider} ({instance.__class__.__name__})")
-    return instance
+        raise ValueError(f"Proveedor de IA no reconocido: '{provider}'. Usa modelos de gemini, openai o local.")
 
 
 # Singleton de compatibilidad (usa el proveedor configurado en .env por defecto)
