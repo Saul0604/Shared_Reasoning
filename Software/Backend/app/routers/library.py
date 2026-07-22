@@ -129,7 +129,6 @@ def get_library_materials(
 @router.get("/download/{material_id}")
 def download_material(
     material_id: int,
-    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     db_material = session.get(LibraryMaterial, material_id)

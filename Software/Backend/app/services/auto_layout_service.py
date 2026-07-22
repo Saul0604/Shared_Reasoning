@@ -48,13 +48,13 @@ class AutoLayoutService:
     }
 
     # Filas disponibles para colocar componentes (sección superior a-e del bus strip)
-    COMPONENT_ROWS = ['b', 'c', 'd']
+    COMPONENT_ROWS = ['a', 'b', 'c', 'd', 'e']
     # Separación entre los dos pines de un componente (en columnas)
     PIN_SPACING = 3
-    # Separación entre redes de señal distintas (gap entre columnas)
-    NET_SPACING = 4
+    # Separación entre redes de señal distintas (gap compacto entre columnas)
+    NET_SPACING = 1
     # Gap extra entre cadenas de componentes independientes
-    CHAIN_GAP = 3
+    CHAIN_GAP = 1
 
     def _fix_value(self, comp_type: str, value: str) -> str:
         """Reemplaza valores nulos o vacíos con defaults sensatos según el tipo."""
@@ -82,7 +82,7 @@ class AutoLayoutService:
         gnd_net: Optional[str] = None
 
         for comp in netlist.components:
-            if comp.type.lower() in ["battery", "bateria", "power_supply", "fuente"]:
+            if comp.type.lower() in ["battery", "bateria", "power_supply", "fuente", "voltage_source", "voltage"]:
                 battery = comp
                 for pin in comp.pins:
                     if pin.name.lower() in ["positive", "pos", "vcc", "+", "plus"]:
@@ -128,7 +128,7 @@ class AutoLayoutService:
         # El bus strip interno (filas a-e) los conecta sin cable.
         # ═══════════════════════════════════════════════════════════
         net_column: Dict[str, int] = {}    # net de señal → columna asignada
-        col_cursor = 5                      # Columna inicial (después de la batería)
+        col_cursor = 1                      # Columna inicial (empezar desde columna 1)
         row_at_col: Dict[int, int] = defaultdict(int)  # col → índice del siguiente row
 
         # Encontrar componentes iniciales (conectados a VCC)
@@ -188,20 +188,18 @@ class AutoLayoutService:
                     pass  # Ambas conocidas, el componente une dos nets existentes
                 elif col1 is not None and col2 is None:
                     # Pin1 tiene columna, Pin2 necesita una
-                    col2 = col1 + self.PIN_SPACING
+                    col2 = max(col1 + self.PIN_SPACING, col_cursor)
                     if not is_power2:
                         net_column[net2] = col2
-                        col_cursor = max(col_cursor, col2 + self.NET_SPACING)
+                    col_cursor = max(col_cursor, col2 + self.NET_SPACING)
                 elif col2 is not None and col1 is None:
                     # Pin2 tiene columna, Pin1 necesita una
-                    col1 = col2 - self.PIN_SPACING
-                    if col1 < 1:
-                        col1 = col2 + self.PIN_SPACING  # Evitar columnas negativas
+                    col1 = col_cursor
                     if not is_power1:
                         net_column[net1] = col1
-                        col_cursor = max(col_cursor, col1 + self.NET_SPACING)
+                    col_cursor = max(col_cursor, col1 + self.NET_SPACING)
                 else:
-                    # Ninguna conocida → asignar desde col_cursor
+                    # Ninguna conocida -> asignar desde col_cursor
                     col1 = col_cursor
                     col2 = col_cursor + self.PIN_SPACING
                     if not is_power1:
@@ -210,7 +208,7 @@ class AutoLayoutService:
                         net_column[net2] = col2
                     col_cursor = max(col_cursor, col2 + self.NET_SPACING)
 
-                # Asegurar col1 < col2 para orientación consistente (izq a der)
+                # Asegurar col1 < col2 para orientacion consistente (izq a der)
                 if col1 > col2:
                     pin1, pin2 = pin2, pin1
                     net1, net2 = net2, net1
@@ -225,7 +223,7 @@ class AutoLayoutService:
                 row_at_col[col1] = max_row_idx + 1
                 row_at_col[col2] = max_row_idx + 1
 
-                # ── Registrar posiciones físicas ──
+                # ── Registrar posiciones fisicas ──
                 pin_physical[f"{comp.id}.{pin1.name}"] = (row, col1)
                 pin_physical[f"{comp.id}.{pin2.name}"] = (row, col2)
 
@@ -294,7 +292,7 @@ class AutoLayoutService:
                             wire_color="rojo",
                             breadboard=ConnectionBreadboard(
                                 from_row="+", from_col=pos[1],
-                                to_row="a", to_col=pos[1]  # Usamos la fila 'a' para que no choque con el componente
+                                to_row=pos[0], to_col=pos[1]  # Usar la fila real del componente
                             )
                         ))
                         routed_power_cols.add(rail_key)
@@ -309,7 +307,7 @@ class AutoLayoutService:
                             to_pin="negative",
                             wire_color="negro",
                             breadboard=ConnectionBreadboard(
-                                from_row="e", from_col=pos[1], # Usamos la fila 'e' para que no choque con el componente
+                                from_row=pos[0], from_col=pos[1],  # Usar la fila real del componente
                                 to_row="-", to_col=pos[1]
                             )
                         ))
