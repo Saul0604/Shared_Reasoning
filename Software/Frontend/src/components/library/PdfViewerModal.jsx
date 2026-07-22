@@ -11,9 +11,49 @@ export default function PdfViewerModal({ material, onClose }) {
   const downloadMaterialAsBlob = useLibraryStore(state => state.downloadMaterialAsBlob);
 
   useEffect(() => {
-    const API_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
-    setBlobUrl(`${API_URL}/library/download/${material.id}`);
-    setLoading(false);
+    let active = true;
+    let createdUrl = null;
+
+    async function loadPdfBlob() {
+      setLoading(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem('access_token');
+        const API_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api');
+        
+        const res = await apiFetch(`${API_URL}/library/download/${material.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) {
+          throw new Error('No tienes permisos o el archivo no existe.');
+        }
+
+        const blob = await res.blob();
+        createdUrl = window.URL.createObjectURL(blob);
+        
+        if (active) {
+          setBlobUrl(createdUrl);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (active) {
+          setError(err.message || 'Error al cargar el documento.');
+          setLoading(false);
+        }
+      }
+    }
+
+    loadPdfBlob();
+
+    return () => {
+      active = false;
+      if (createdUrl) {
+        window.URL.revokeObjectURL(createdUrl);
+      }
+    };
   }, [material.id]);
 
   const handleDownload = () => {
@@ -41,16 +81,16 @@ export default function PdfViewerModal({ material, onClose }) {
         {/* Viewer */}
         <div style={{ flex: 1, position: 'relative', background: '#E5E7EB' }}>
           {loading && (
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: '#6B7280' }}>
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: '#6B7280', fontWeight: 500 }}>
               Cargando documento...
             </div>
           )}
           {error && (
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: '#EF4444' }}>
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: '#EF4444', fontWeight: 500 }}>
               {error}
             </div>
           )}
-          {blobUrl && (
+          {!loading && !error && blobUrl && (
             <iframe
               src={`${blobUrl}#toolbar=0`}
               title={material.title}
